@@ -13,6 +13,7 @@ int __attribute__ ((__section__(".text.main")))
 	write(1, "\n33m45mthis should be blue\n", 29);
 	write(1, "35m43mthis should be magenta\n", 31);
 	write(1, "3;3Hthis should be somewhere else", 35);
+	write(1, "15;3H\x7F", 7);
 	  while(1) { 
 
 	}

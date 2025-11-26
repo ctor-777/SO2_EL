@@ -64,12 +64,27 @@ void printc(char c)
 
 	switch(state) {
 		case NO_SEQ:
-			if (c=='\n')
-			{
+			if (c=='\n') {
 				x = 0;
 				y=(y+1)%NUM_ROWS;
 			} else if (c == 0x1b) {
 				state = INIT_SEQ;
+			} else if (c == 0x08) { //backspace
+				if (--x <= 0)
+				{
+					x = NUM_COLUMNS;
+					if (y == 0)
+						y = NUM_ROWS;
+					else
+						--y;
+				}
+
+				Word *screen = (Word *)0xb8000;
+				screen[(y * NUM_COLUMNS + x)] = 0;
+
+			} else if (c == 0x7f) { //del
+				Word *screen = (Word *)0xb8000;
+				screen[(y * NUM_COLUMNS + x)] = 0;
 			} else {
 				Word print_color = bg_color << 4 | fg_color;
 				Word ch = (Word) (c & 0x00FF) | print_color << 8;
@@ -88,9 +103,10 @@ void printc(char c)
 				state = CHANGE_FG_COLOR_SEL;
 			else if (c == '4')
 				state = CHANGE_BG_COLOR_SEL;
-			else if ((c >= '0') && (c <='9'))
+			else if ((c >= '0') && (c <='9')) {
+				tmp_x = c - '0';
 				state = CHANGE_POS_X;
-			else
+			} else
 				state = NO_SEQ;
 			break;
 
