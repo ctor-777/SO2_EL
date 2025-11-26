@@ -14,6 +14,8 @@
 #define NUM_COLUMNS 80
 #define NUM_ROWS    25
 
+#define TAB_WIDTH 8
+
 Byte x, y=19;
 
 Byte fg_color = VGA_COLOR_GREEN;
@@ -49,6 +51,17 @@ int pow(int base, int exponent) {
 	return result; 
 }
 
+void erase_display() {
+	Word *screen = (Word *)0xb8000;
+	for(int y_i = 0; y_i < NUM_ROWS; y_i++) {
+		for(int x_i = 0; x_i < NUM_COLUMNS; x_i++) {
+			screen[(y_i * NUM_COLUMNS + x_i)] = 0;
+		}
+	}
+	x = 0;
+	y = 0;
+}
+
 void printc(char c)
 {
 	static seq_state state = NO_SEQ;
@@ -69,12 +82,20 @@ void printc(char c)
 				y=(y+1)%NUM_ROWS;
 			} else if (c == 0x1b) {
 				state = INIT_SEQ;
+			} else if (c == 0x09) {
+				int diff = x % TAB_WIDTH;
+				x += (TAB_WIDTH - diff);
+				if( x >= NUM_COLUMNS) {
+					x = 0;
+					y = (y+1) % NUM_ROWS;
+				}
+
 			} else if (c == 0x08) { //backspace
 				if (--x <= 0)
 				{
-					x = NUM_COLUMNS;
+					x = NUM_COLUMNS - 1;
 					if (y == 0)
-						y = NUM_ROWS;
+						y = NUM_ROWS - 1;
 					else
 						--y;
 				}
@@ -106,6 +127,9 @@ void printc(char c)
 			else if ((c >= '0') && (c <='9')) {
 				tmp_x = c - '0';
 				state = CHANGE_POS_X;
+			} else if (c == 'J') {
+				erase_display();
+				state = NO_SEQ;
 			} else
 				state = NO_SEQ;
 			break;
