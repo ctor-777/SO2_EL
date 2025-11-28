@@ -80,9 +80,9 @@ void printc(char c)
 			if (c=='\n') {
 				x = 0;
 				y=(y+1)%NUM_ROWS;
-			} else if (c == 0x1b) {
+			} else if (c == 0x1b) { //ESC
 				state = INIT_SEQ;
-			} else if (c == 0x09) {
+			} else if (c == 0x09) { //tab
 				int diff = x % TAB_WIDTH;
 				x += (TAB_WIDTH - diff);
 				if( x >= NUM_COLUMNS) {
@@ -127,7 +127,7 @@ void printc(char c)
 			else if ((c >= '0') && (c <='9')) {
 				tmp_x = c - '0';
 				state = CHANGE_POS_X;
-			} else if (c == 'J') {
+			} else if (c == 'J') { //clear screen
 				erase_display();
 				state = NO_SEQ;
 			} else

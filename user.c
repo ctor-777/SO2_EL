@@ -12,11 +12,11 @@ int __attribute__ ((__section__(".text.main")))
 
 	write(1, "\n33m45mthis should be blue\n", 29);
 	write(1, "35m43mthis should be magenta\n", 31);
-	write(1, "3;3Hthis should be somewhere else", 35);
+	write(1, "3;3Hthis should be\b\b\b somewhere else", 38);
 	write(1, "15;3H\x7F", 7);
-	write(1, "J40m", 6);
-	write(1, "test:\tthis should be aligned\n", 29);
-	write(1, "di:\tthis should be aligned\n", 27);
+	// write(1, "J40m", 6);
+	// write(1, "test:\tthis should be aligned\n", 29);
+	// write(1, "di:\tthis should be aligned\n", 27);
 	  while(1) { 
 
 	}
