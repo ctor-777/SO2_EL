@@ -117,3 +117,21 @@ sysenter_fin:
 	movl 12(%esp), %ecx	      // User stack address
 	sti
 	sysexit
+
+ENTRY(segmentation_fault_handler)
+	pushl %ebp
+	movl %esp, %ebp
+
+	SAVE_ALL
+	movl 4(%ebp), %eax //err
+	pushl %eax
+	movl 8(%ebp), %eax //eip
+	pushl %eax
+	pushl %cr2
+	call segmentation_fault_service
+	add   $12, %esp
+	RESTORE_ALL
+
+	movl %ebp, %esp
+	popl %ebp
+	iret

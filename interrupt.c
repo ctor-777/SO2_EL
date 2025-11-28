@@ -116,9 +116,56 @@ void setIdt()
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
+  setInterruptHandler(0x0E, segmentation_fault_handler, 0);
 
   setSysenter();
 
   set_idt_reg(&idtR);
 }
 
+//-----------------------------------------------------------------------------------
+
+void segmentation_fault_service(unsigned int eip, unsigned int err, unsigned int fault_addr)
+{
+	char buff[8];
+
+	printk("\nProcess generates a ");
+
+	//err handling
+	if ((err >> 2) & 1)
+		printk("user ");
+	else
+		printk("system ");
+
+	if ((err >> 4) & 1)
+		printk("instruction fetch ");
+	else {
+		if ((err >> 1) & 1)
+			printk("write ");
+		else
+			printk("read ");
+	}
+
+	printk("(");
+	itoa(err, buff);
+	printk(buff);
+	printk(") ");
+
+	printk("PAGE FAULT exception\nEIP: 0x");
+	itoa_hex(eip, buff);
+	printk(buff);
+	// printk(" (");
+	// itoa(eip, buff);
+	// printk(buff);
+	// printk(")");
+	
+	printk("   fault address: 0x");
+	itoa_hex(fault_addr, buff);
+	printk(buff);
+	// printk(" (");
+	// itoa(fault_addr, buff);
+	// printk(buff);
+	// printk(")");
+
+	while (1);
+}
