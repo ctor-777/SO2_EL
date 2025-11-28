@@ -100,3 +100,17 @@ ENTRY(get_stats)
 	popl %ebp
 	ret
 
+ENTRY(clone)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;  // Save EBX, ESI and EDI if modified
+	movl $56, %eax
+	movl 0x8(%ebp), %ebx;	//function
+	movl 0xC(%ebp), %ecx;	//stack
+	movl 0x10(%ebp), %edx;	//parameter
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok	// if (eax < 0) -> 
+	popl %ebp
+	ret
