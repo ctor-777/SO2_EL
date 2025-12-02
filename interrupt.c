@@ -132,6 +132,7 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].highOffset      = highWord((DWord)handler);
 }
 
+void segmentation_fault_handler();
 void clock_handler();
 void keyboard_handler();
 void system_call_handler();

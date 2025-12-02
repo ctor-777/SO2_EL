@@ -123,11 +123,12 @@ ENTRY(segmentation_fault_handler)
 	movl %esp, %ebp
 
 	SAVE_ALL
-	movl 4(%ebp), %eax //err
+	movl %cr2, %eax //cr2 (fault address)
 	pushl %eax
-	movl 8(%ebp), %eax //eip
+	movl 4(%ebp), %eax //err (error code)
 	pushl %eax
-	pushl %cr2
+	movl 8(%ebp), %eax //eip (fault instruction)
+	pushl %eax
 	call segmentation_fault_service
 	add   $12, %esp
 	RESTORE_ALL

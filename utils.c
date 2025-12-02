@@ -1,6 +1,8 @@
 #include <utils.h>
 #include <types.h>
 
+#include <sched.h>
+
 #include <mm_address.h>
 
 void copy_data(void *start, void *dest, int size)
@@ -172,7 +174,7 @@ void itoa_hex(int a, char* b) {
 
 void print_stack(union task_union* t_u) {
 	unsigned long * stack_base = (unsigned long *)&(t_u->stack[KERNEL_STACK_SIZE - 1]);
-	unsigned long * stack_top = (unsigned long *)t_u->task.kernel_esp - 1;
+	unsigned long * stack_top = (unsigned long *)t_u->task.register_esp - 1;
 	 
 	if (t_u == (union task_union*) current()) {
 		__asm__ __inline__ (
@@ -215,7 +217,7 @@ void print_queue(struct list_head* head) {
 
 	char buff[9];
 	list_for_each(pos, head) {
-		pos_task_s = list_entry(pos, struct task_struct, anchor);
+		pos_task_s = list_entry(pos, struct task_struct, list);
 
 		int pos_task = ((int)pos_task_s-(int)task)/sizeof(union task_union);	
 		
