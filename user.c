@@ -16,6 +16,8 @@ int __attribute__ ((__section__(".text.main")))
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
 
 
-	int i = clone(&thread_func, (&i) - (10 * sizeof(unsigned long)), 0);
+	int i = clone(&thread_func, 0, (&i) - (10 * sizeof(unsigned long)));
+
+	write(1, "returned from clone\n", 20);
 	while(1) { }
 }
