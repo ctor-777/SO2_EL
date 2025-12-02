@@ -17,6 +17,16 @@
 
 #include <errno.h>
 
+
+/*
+ * We add interrupt.h in order to have access to the global variables: 
+ *    - keyboard_events: circular buffer
+ *    - add_index: index pointing to the next position to add an event on the circular buffer 
+ *    - read_index: index pointing to the next position to read from the circular buffer
+*/
+
+#include <interrupt.h>
+
 #define LECTURA 0
 #define ESCRIPTURA 1
 
@@ -285,4 +295,32 @@ int sys_get_stats(int pid, struct stats *st)
 	}
   }
   return -ESRCH; /*ESRCH */
+}
+
+/*
+ * The syscall sys_pollEvent consists first of analyzing the possible cases of return explained in the Possible_Cases.txt. 
+ *
+ * In the case of read_index and add_index being equal and overr equal to 0, we will be facing a case where the next event to be used in the syscall is non-existing because the current index of
+ * the circular buffer to read is at the same spot from the index to add events, so if we try to read the buffer, we will get either a NULL value or a value we've already used before. In this case
+ * where there is no event to read, we will just return 0 to avoid blocking the process as demanded in the milestone.
+ *
+ * On the other hand, we will have an event prepared to read from the buffer, in this case we will first assure the parameter *ev is a legal direction with the function access_ok, if it's not,
+ * probably due to an error in the parameter passing from the wrapper and, we will return the corresponding error code, in this case -14 (segmentation fault error = 14). If we do have access to
+ * the direction, we will overwrite the event with the next event to read from the circular buffer.
+ *
+ * Finally, we will update the index (always in the range of the size of the circular buffer) and before returning 1, we will update the variable overr to 0, just in case it was equals to 1, so we can
+ * store a new event in the position read_index was pointing before updating it. 
+*/
+
+int sys_pollEvent(struct event_t *ev)
+{
+  if(read_index!=add_index || overr==1)
+  {
+    if(!access_ok(VERIFY_WRITE, ev, sizeof(struct event_t))) return -EFAULT;
+    copy_to_user(&(keyboard_events[read_index]), ev, sizeof(struct event_t));
+    read_index = (read_index + 1) % SIZE_CIRCULAR_BUFFER;
+    overr=0;
+    return 1;
+  }
+  return 0;
 }

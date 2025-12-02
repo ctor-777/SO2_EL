@@ -11,6 +11,8 @@
 
 #include <zeos_interrupt.h>
 
+#include <libc.h>
+
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 
@@ -41,11 +43,49 @@ void clock_routine()
   schedule();
 }
 
+/*
+ * We create the variables which will be used as index to the buffer, and the circular buffer with size 4 to store the arriving events. 
+ * We chose size 4 buffer due to the fact that it's easier to check it's correct functionality and there's no benefit from extending it's size as it's a circular buffer.
+ *
+ * We also declare a variable overr whose main pourpose is to block the keyboard support from overwritting events on the buffer which have not been read yet (on the future syscall pollEvent). That's
+ * because we've made that the buffer ignore new keyboard events and keeps it's content until we read an event from the buffer on the syscall pollEvent, then we will add a new event (if any event 
+ * arrives) overwritting the previous read content. 
+*/
+
+int add_index = 0;
+int read_index = 0;
+int overr = 0;
+
+struct event_t keyboard_events[SIZE_CIRCULAR_BUFFER];
+
+/*
+ * We modified the previous keyboard_routing according to the milestone objective.
+ * According to the Posible_Cases.txt, we will not add a new event if the buffer indexes are pointing to the same position on the buffer and the variable overr is set to 1, that's because in this case
+ * the buffer is already full with events that have not been read by the user using the syscall pollEvent.
+ *
+ * However, if that's not the case, we will map the 8th bit to see if the event is a pressed key or a released key, once we stored it in the variable pressed from the struct, we will store, in the 
+ * variable scandcode, the character associated with the event applying a mask to the 7 firsts bits (that equals to the ascii number of the character) and update the add_index to point to the next 
+ * position to add a future event.
+ *
+ * If the updated index is equals to the read_index, that means that we have reached the maximum events we can add to the buffer and we will block the functionality of adding new events to the buffer 
+ * until the user reads an event from it. 
+*/
 void keyboard_routine()
 {
   unsigned char c = inb(0x60);
+  if (c&0x80)  
+    printc_xy(0, 0, char_map[c&0x7f]);
   
-  if (c&0x80) printc_xy(0, 0, char_map[c&0x7f]);
+  if(add_index!=read_index || overr==0)
+  {
+    if (c&0x80)
+      keyboard_events[add_index].pressed = 0;
+    else
+      keyboard_events[add_index].pressed = 1;
+    keyboard_events[add_index].scandcode = char_map[c&0x7F];
+    add_index = (add_index + 1) % SIZE_CIRCULAR_BUFFER;
+    if(add_index == read_index) overr = 1;
+  }
 }
 
 void setInterruptHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
@@ -92,6 +132,7 @@ void setTrapHandler(int vector, void (*handler)(), int maxAccessibleFromPL)
   idt[vector].highOffset      = highWord((DWord)handler);
 }
 
+void segmentation_fault_handler();
 void clock_handler();
 void keyboard_handler();
 void system_call_handler();
@@ -116,9 +157,56 @@ void setIdt()
   /* ADD INITIALIZATION CODE FOR INTERRUPT VECTOR */
   setInterruptHandler(32, clock_handler, 0);
   setInterruptHandler(33, keyboard_handler, 0);
+  setInterruptHandler(0x0E, segmentation_fault_handler, 0);
 
   setSysenter();
 
   set_idt_reg(&idtR);
 }
 
+//-----------------------------------------------------------------------------------
+
+void segmentation_fault_service(unsigned int eip, unsigned int err, unsigned int fault_addr)
+{
+	char buff[8];
+
+	printk("\nProcess generates a ");
+
+	//err handling
+	if ((err >> 2) & 1)
+		printk("user ");
+	else
+		printk("system ");
+
+	if ((err >> 4) & 1)
+		printk("instruction fetch ");
+	else {
+		if ((err >> 1) & 1)
+			printk("write ");
+		else
+			printk("read ");
+	}
+
+	printk("(");
+	itoa(err, buff);
+	printk(buff);
+	printk(") ");
+
+	printk("PAGE FAULT exception\nEIP: 0x");
+	itoa_hex(eip, buff);
+	printk(buff);
+	// printk(" (");
+	// itoa(eip, buff);
+	// printk(buff);
+	// printk(")");
+	
+	printk("   fault address: 0x");
+	itoa_hex(fault_addr, buff);
+	printk(buff);
+	// printk(" (");
+	// itoa(fault_addr, buff);
+	// printk(buff);
+	// printk(")");
+
+	while (1);
+}

@@ -114,3 +114,32 @@ ENTRY(clone)
 	js nok	// if (eax < 0) -> 
 	popl %ebp
 	ret
+
+/*
+  * int pollEvent(struct event_t *ev) 
+  * We create this wrapper for the system call pollEvent to allow the user-mode code to invoke it without privileges.
+  *
+  * The wrapper consists of manually creating a dynamic link to the user code because in assembly, the compiler does not do it for you. 
+  * 
+  * Then save the registers that will be modified (%ebx to store the parameter, *ev, of the syscall), 
+  * move to the register %eax the number asociated to the syscall in the sys_call_table.S, in this case 5. 
+  * 
+  * Afterward call the syscall sysenter which will save %ecx, %edx registers, create a dynamic link, and enter the system mode, pushing part of the HW context and calling the sys_call_handler.
+  * 
+  * After we've done the syscall, we restore the %ebx, check if we've had any error during the syscall, whose error number will be stored in the %eax register, if it's the case, we will jump to the 
+  * funcion nok storing the error code in the errno variable and overwritte the %eax register with -1.
+  * 
+  * Finally, we undo the dynamic link and return to the user code with the result in the %eax register.
+*/
+ENTRY(pollEvent)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $5, %eax
+	movl 0x8(%ebp), %ebx;	//&ev
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
