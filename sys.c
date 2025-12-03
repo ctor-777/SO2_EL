@@ -99,8 +99,12 @@ int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
 	unthread->task.register_esp-=sizeof(DWord);
 	*(DWord*)(unthread->task.register_esp)=temp_ebp;
 
+	stack-=sizeof(unsigned long);
+	*((long unsigned int*)stack) = parameter;
+	stack-=sizeof(unsigned long);
+	*((long unsigned int*)stack) = 0;
 	//set return address to function
-	unthread->stack[KERNEL_STACK_SIZE - 6] = function;
+	unthread->stack[KERNEL_STACK_SIZE - 5] = function;
 	unthread->stack[KERNEL_STACK_SIZE - 2] = stack;
 	*((long unsigned int*)stack) = parameter;
 		
@@ -250,21 +254,30 @@ int sys_gettime()
 void sys_exit()
 {  
   int i;
-
+  int thread_alive = -1;
   page_table_entry *process_PT = get_PT(current());
 
-  // Deallocate all the propietary physical pages
-  for (i=0; i<NUM_PAG_DATA; i++)
-  {
-	free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-	del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-  }
+  page_table_entry *dir = current()->dir_pages_baseAddr;
+  union task_union *t = task;
+
+  for(t ; t<NR_TASKS*4096 ; t+=4096)
+  	if(t->task.dir_pages_baseAddr == dir) {
+  		thread_alive++;
+  		break;
+  	}
+  
+  if(!thread_alive)
+	// Deallocate all the propietary physical pages
+	for (i=0; i<NUM_PAG_DATA; i++)
+	{
+	  free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+	  del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+	}
   
   /* Free task_struct */
   list_add_tail(&(current()->list), &freequeue);
   
   current()->PID=-1;
-  
   /* Restarts execution of the next process */
   sched_next_rr();
 }
