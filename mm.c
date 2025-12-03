@@ -2,6 +2,7 @@
  * mm.c - Memory Management: Paging & segment memory management
  */
 
+#include "include/list.h"
 #include <types.h>
 #include <mm.h>
 #include <segment.h>
@@ -130,12 +131,22 @@ void set_pe_flag()
   write_cr0(cr0);
 }
 
+void init_slots() {
+	INIT_LIST_HEAD(&freeSlotq);
+	for(int i = 0; i < MAX_KERNEL_SLOTS; i++) {
+		slots[i].init_addr = 0;
+		slots[i].num_pags = 0;
+		list_add_tail( &(slots[i].anchor), &freeSlotq);
+	}
+}
+
 /* Initializes paging for the system address space */
 void init_mm()
 {
   init_table_pages();
   init_frames();
   init_dir_pages();
+	init_slots();
   allocate_DIR(&task[0].task);
   set_cr3(get_DIR(&task[0].task));
   set_pe_flag();

@@ -15,7 +15,7 @@ extern int errno;
  * If it was declared in a system-privileged header, we could not have access to the struct, including the event information we'd store.
 */
 
-extern struct event_t {
+struct event_t {
     int pressed;
     char scandcode;
 };
@@ -23,6 +23,7 @@ extern struct event_t {
 int write(int fd, char *buffer, int size);
 
 void itoa(int a, char *b);
+void itoa_hex(int a, char* b);
 
 int strlen(char *a);
 
@@ -43,5 +44,9 @@ int get_stats(int pid, struct stats *st);
 */
 
 int pollEvent(struct event_t *ev);
+
+char* getSlot(int num_bytes);
+
+int delSlot(char* s);
 
 #endif  /* __LIBC_H__ */

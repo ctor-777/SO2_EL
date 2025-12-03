@@ -14,7 +14,27 @@
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
 
+#define MAX_KERNEL_SLOTS 100
+#define HEAP_START 0x200000
+
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
+
+
+extern struct list_head freeSlotq;
+
+struct slot_data {
+	struct list_head anchor;
+	char* init_addr;
+	int num_pags;
+};
+
+struct shared_memory {
+	struct list_head slots;
+};
+
+extern struct slot_data slots[MAX_KERNEL_SLOTS];
+extern struct shared_memory process_memory[NR_TASKS];
+
 
 struct task_struct {
   int PID;			/* Process ID. This MUST be the first field of the struct. */
@@ -24,6 +44,7 @@ struct task_struct {
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
+	struct shared_memory* din_mem;
 };
 
 union task_union {

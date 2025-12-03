@@ -1,6 +1,9 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "include/list.h"
+#include "include/mm_address.h"
+#include "include/types.h"
 #include <devices.h>
 
 #include <utils.h>
@@ -273,4 +276,86 @@ int sys_pollEvent(struct event_t *ev)
     return 1;
   }
   return 0;
+}
+
+struct slot_data slots[MAX_KERNEL_SLOTS];
+
+struct list_head freeSlotq;
+
+void free_allocated(page_table_entry* current_PT, int start_page, int num_pages) {
+	for(int i = 0; i < num_pages; i++) {
+		free_frame(get_frame(current_PT, start_page + i));
+		del_ss_pag(current_PT, start_page + i);
+	}
+}
+
+char* sys_getSlot(int num_bytes) {
+	static unsigned int current_page = HEAP_START >> 12;
+	int num_pags = (num_bytes >> 12) + 1;
+
+	if(num_pags > (TOTAL_PAGES - current_page)) { //requested more memory than logically available
+		return 0;
+	}
+
+	//reservar paginas fisicas y mapear
+	
+	page_table_entry *current_PT = get_PT(current());
+	int new_frame;
+	for(int page = 0; page < num_pags; page++) {
+		new_frame = alloc_frame();
+		if (new_frame != -1) {
+			set_ss_pag(current_PT, current_page + page, new_frame);
+		} else { // out of memory
+			free_allocated(current_PT, current_page, page);
+			return 0;
+		}
+	}
+
+	//añadir infromación del slot
+	
+	if (list_empty(&freeSlotq)) { // maxima cantidad de slots total alcanzada
+		free_allocated(current_PT, current_page, num_pags);
+		return 0;
+	}
+
+	struct list_head* lslot = list_first(&freeSlotq);
+	list_del(lslot);
+	list_add_tail(lslot, &(current()->din_mem->slots));
+
+	struct slot_data* slot =  list_entry(lslot, struct slot_data, anchor);
+
+	slot->init_addr = (char*)(current_page << 12);
+	slot->num_pags = num_pags;
+
+	//flush TLB
+	set_cr3(get_DIR(current()));
+
+	return (char*)(current_page << 12);
+}
+
+int sys_delSlot(char* s) {
+	// si no alineado falla
+	if (((int)s) % PAGE_SIZE)
+		return -1;
+
+	//encontrar slot
+	struct list_head* pos;
+	struct slot_data* slot;
+	list_for_each(pos, &(current()->din_mem->slots)) {
+		slot = list_entry(pos, struct slot_data, anchor);
+
+		if (slot->init_addr == s){ //liberar recursos si encontrado
+			free_allocated(get_PT(current()), ((unsigned int)(slot->init_addr) >> 12), slot->num_pags);
+
+			list_del(pos);
+			list_add_tail(pos, &freeSlotq);
+
+			//flush TLB
+			set_cr3(get_DIR(current()));
+
+			return 0;
+		}
+	}
+
+	return -1; //error, slot no reservado o ya liberado
 }

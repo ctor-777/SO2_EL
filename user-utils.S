@@ -128,3 +128,32 @@ ENTRY(pollEvent)
 	js nok
 	popl %ebp
 	ret
+
+
+// char* getSlot(int num_bytes)
+ENTRY(getSlot)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $40, %eax
+	movl 0x8(%ebp), %ebx;	//num_bytes
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+// int delSlot(char* s)
+ENTRY(delSlot)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $41, %eax
+	movl 0x8(%ebp), %ebx;	//s
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret

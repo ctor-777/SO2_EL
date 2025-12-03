@@ -42,8 +42,8 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall	//37
 	.long sys_ni_syscall	//38
 	.long sys_ni_syscall	//39
-	.long sys_ni_syscall	//40
-	.long sys_ni_syscall	//41
+	.long sys_getSlot	//40
+	.long sys_delSlot	//41
 	.long sys_ni_syscall	//42
 	.long sys_ni_syscall	//43
 	.long sys_ni_syscall	//44

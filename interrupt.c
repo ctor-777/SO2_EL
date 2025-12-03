@@ -13,6 +13,8 @@
 
 #include <libc.h>
 
+#include <utils.h>
+
 Gate idt[IDT_ENTRIES];
 Register    idtR;
 

@@ -2,6 +2,8 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+#include "include/sched.h"
+#include "include/list.h"
 #include <types.h>
 #include <hardware.h>
 #include <segment.h>
@@ -18,7 +20,10 @@
 union task_union protected_tasks[NR_TASKS+2]
   __attribute__((__section__(".data.task")));
 
+
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
+
+struct shared_memory process_memory[NR_TASKS];
 
 #if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
@@ -194,6 +199,10 @@ void init_task1(void)
   c->total_quantum=DEFAULT_QUANTUM;
 
   c->state=ST_RUN;
+
+	c->din_mem = &(process_memory[1]);
+
+	INIT_LIST_HEAD(&(process_memory[1].slots));
 
   remaining_quantum=c->total_quantum;
 
