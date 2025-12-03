@@ -16,6 +16,7 @@
 
 #define MAX_KERNEL_SLOTS 100
 #define HEAP_START 0x200000
+#define HEAP_START_PAGE (HEAP_START >> 12)
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 

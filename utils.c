@@ -1,3 +1,5 @@
+#include "include/sched.h"
+#include "include/types.h"
 #include <utils.h>
 #include <types.h>
 
@@ -58,6 +60,23 @@ int copy_to_user(void *start, void *dest, int size)
   return 0;
 }
 
+int heap_access_ok(const void * addr, unsigned long size) {
+	if ((unsigned long)addr >= HEAP_START) {
+		unsigned long page = (unsigned long)addr >> 12;
+		unsigned long num_pages = (size >> 12) + 1;
+
+		page_table_entry *PT = get_PT(current());
+
+		for(int i = page; i < num_pages; i++) {
+			if(!PT[i].bits.present)
+				return 0;
+		}
+		return 1;
+
+	} else
+		return 0;
+}
+
 /* access_ok: Checks if a user space pointer is valid
  * @type:  Type of access: %VERIFY_READ or %VERIFY_WRITE. Note that
  *         %VERIFY_WRITE is a superset of %VERIFY_READ: if it is safe
@@ -87,7 +106,7 @@ int access_ok(int type, const void * addr, unsigned long size)
   	(addr_fin<=(USER_FIRST_PAGE+NUM_PAG_CODE+NUM_PAG_DATA)))
           return 1;
   }
-  return 0;
+  return heap_access_ok(addr, size);
 }
 
 

@@ -330,7 +330,10 @@ char* sys_getSlot(int num_bytes) {
 	//flush TLB
 	set_cr3(get_DIR(current()));
 
-	return (char*)(current_page << 12);
+	unsigned int return_page = current_page;
+	current_page += num_pags;
+
+	return (char*)(return_page << 12);
 }
 
 int sys_delSlot(char* s) {
