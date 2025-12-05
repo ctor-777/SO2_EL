@@ -26,7 +26,7 @@ SYSLDFLAGS = -T system.lds
 USRLDFLAGS = -T user.lds
 LINKFLAGS = -g
 
-SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o utils.o hardware.o list.o p_stats.o kernel-utils.o
+SYSOBJ = interrupt.o entry.o sys_call_table.o io.o sched.o sys.o mm.o devices.o utils.o hardware.o list.o p_stats.o kernel-utils.o semaphore.o
 
 LIBZEOS = -L . -l zeos -l auxjp
 
@@ -82,7 +82,9 @@ utils.o:utils.c $(INCLUDEDIR)/utils.h
 
 p_stats.o:p_stats.c $(INCLUDEDIR)/utils.h
 
-system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/system.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/mm.h $(INCLUDEDIR)/io.h $(INCLUDEDIR)/mm_address.h 
+semaphore.o:semaphore.c $(INCLUDEDIR)/semaphore.h
+
+system.o:system.c $(INCLUDEDIR)/hardware.h system.lds $(SYSOBJ) $(INCLUDEDIR)/segment.h $(INCLUDEDIR)/types.h $(INCLUDEDIR)/interrupt.h $(INCLUDEDIR)/system.h $(INCLUDEDIR)/sched.h $(INCLUDEDIR)/mm.h $(INCLUDEDIR)/io.h $(INCLUDEDIR)/mm_address.h $(INCLUDEDIR)/semaphore.h
 
 
 system: system.o system.lds $(SYSOBJ)
@@ -103,6 +105,10 @@ emul: zeos.bin
 
 gdb: zeos.bin
 	bochs -q -f .bochsrc_gdb &
+ifeq ($(USER), ctor)
+	sleep 8
+	wmctrl -r "Bochs x86 emulator, http://bochs.sourceforge.net/" -e 0,775,0,-1,-1
+endif
 	gdb -x .gdbcmd system
 
 emuldbg: zeos.bin

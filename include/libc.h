@@ -38,6 +38,8 @@ int yield();
 
 int get_stats(int pid, struct stats *st);
 
+int clone(void (*function)(void* arg), void*parameter, char* stack);
+
 /*
  * We declare the wrapper header for the syscall
 */

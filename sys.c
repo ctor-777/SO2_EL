@@ -17,6 +17,8 @@
 
 #include <errno.h>
 
+#include <semaphore.h>
+
 
 /*
  * We add interrupt.h in order to have access to the global variables: 
@@ -66,6 +68,63 @@ int ret_from_fork()
   return 0;
 }
 
+int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
+	struct list_head *lhcurrent = NULL;
+	union task_union *unthread;
+	
+	/* Any free task_struct? */
+	if (list_empty(&freequeue)) return -ENOMEM;
+	
+	lhcurrent=list_first(&freequeue);
+	
+	list_del(lhcurrent);
+	
+	unthread=(union task_union*)list_head_to_task_struct(lhcurrent);
+	
+	/* Copy the parent's task struct to child's */
+	copy_data(current(), unthread, sizeof(union task_union));
+	
+	unthread->task.PID=++global_PID;
+	unthread->task.state=ST_READY;
+	
+	int register_ebp;		/* frame pointer */
+
+	register_ebp = (int) get_ebp();
+	register_ebp=(register_ebp - (int)current()) + (int)(unthread);
+	
+	unthread->task.register_esp=register_ebp + sizeof(DWord);
+	
+	DWord temp_ebp=*(DWord*)register_ebp;
+	
+	unthread->task.register_esp-=sizeof(DWord);
+	*(DWord*)(unthread->task.register_esp)=(DWord)&ret_from_fork;
+	unthread->task.register_esp-=sizeof(DWord);
+	*(DWord*)(unthread->task.register_esp)=temp_ebp;
+
+	stack-=sizeof(unsigned long);
+	*((long unsigned int*)stack) = parameter;
+	stack-=sizeof(unsigned long);
+	*((long unsigned int*)stack) = 0;
+	//set return address to function
+	unthread->stack[KERNEL_STACK_SIZE - 5] = function;
+	unthread->stack[KERNEL_STACK_SIZE - 2] = stack;
+	*((long unsigned int*)stack) = parameter;
+		
+
+	
+	/* Set stats to 0 */
+	init_stats(&(unthread->task.p_stats));
+	
+	/* Queue child process into readyqueue */
+	unthread->task.state=ST_READY;
+	list_add_tail(&(unthread->task.list), &readyqueue);
+	
+	/* Initialize list of semaphores*/
+	INIT_LIST_HEAD(&(unthread->task.semaphores));
+	
+	return unthread->task.PID;
+}
+
 int sys_fork(void)
 {
   struct list_head *lhcurrent = NULL;
@@ -91,44 +150,44 @@ int sys_fork(void)
   page_table_entry *process_PT = get_PT(&uchild->task);
   for (pag=0; pag<NUM_PAG_DATA; pag++)
   {
-    new_ph_pag=alloc_frame();
-    if (new_ph_pag!=-1) /* One page allocated */
-    {
-      set_ss_pag(process_PT, PAG_LOG_INIT_DATA+pag, new_ph_pag);
-    }
-    else /* No more free pages left. Deallocate everything */
-    {
-      /* Deallocate allocated pages. Up to pag. */
-      for (i=0; i<pag; i++)
-      {
-        free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-        del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-      }
-      /* Deallocate task_struct */
-      list_add_tail(lhcurrent, &freequeue);
-      
-      /* Return error */
-      return -EAGAIN; 
-    }
+	new_ph_pag=alloc_frame();
+	if (new_ph_pag!=-1) /* One page allocated */
+	{
+	  set_ss_pag(process_PT, PAG_LOG_INIT_DATA+pag, new_ph_pag);
+	}
+	else /* No more free pages left. Deallocate everything */
+	{
+	  /* Deallocate allocated pages. Up to pag. */
+	  for (i=0; i<pag; i++)
+	  {
+		free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+		del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+	  }
+	  /* Deallocate task_struct */
+	  list_add_tail(lhcurrent, &freequeue);
+	  
+	  /* Return error */
+	  return -EAGAIN; 
+	}
   }
 
   /* Copy parent's SYSTEM and CODE to child. */
   page_table_entry *parent_PT = get_PT(current());
   for (pag=0; pag<NUM_PAG_KERNEL; pag++)
   {
-    set_ss_pag(process_PT, pag, get_frame(parent_PT, pag));
+	set_ss_pag(process_PT, pag, get_frame(parent_PT, pag));
   }
   for (pag=0; pag<NUM_PAG_CODE; pag++)
   {
-    set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
+	set_ss_pag(process_PT, PAG_LOG_INIT_CODE+pag, get_frame(parent_PT, PAG_LOG_INIT_CODE+pag));
   }
   /* Copy parent's DATA to child. We will use TOTAL_PAGES-1 as a temp logical page to map to */
   for (pag=NUM_PAG_KERNEL+NUM_PAG_CODE; pag<NUM_PAG_KERNEL+NUM_PAG_CODE+NUM_PAG_DATA; pag++)
   {
-    /* Map one child page to parent's address space. */
-    set_ss_pag(parent_PT, pag+NUM_PAG_DATA, get_frame(process_PT, pag));
-    copy_data((void*)(pag<<12), (void*)((pag+NUM_PAG_DATA)<<12), PAGE_SIZE);
-    del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
+	/* Map one child page to parent's address space. */
+	set_ss_pag(parent_PT, pag+NUM_PAG_DATA, get_frame(process_PT, pag));
+	copy_data((void*)(pag<<12), (void*)((pag+NUM_PAG_DATA)<<12), PAGE_SIZE);
+	del_ss_pag(parent_PT, pag+NUM_PAG_DATA);
   }
   /* Deny access to the child's memory space */
   set_cr3(get_DIR(current()));
@@ -156,6 +215,9 @@ int sys_fork(void)
   /* Queue child process into readyqueue */
   uchild->task.state=ST_READY;
   list_add_tail(&(uchild->task.list), &readyqueue);
+  
+  /* Initialize list of semaphores*/
+  INIT_LIST_HEAD(&(uchild->task.semaphores));
   
   return uchild->task.PID;
 }
@@ -200,21 +262,30 @@ int sys_gettime()
 void sys_exit()
 {  
   int i;
-
+  int thread_alive = -1;
   page_table_entry *process_PT = get_PT(current());
 
-  // Deallocate all the propietary physical pages
-  for (i=0; i<NUM_PAG_DATA; i++)
-  {
-    free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-    del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
-  }
+  page_table_entry *dir = current()->dir_pages_baseAddr;
+  union task_union *t = task;
+
+  for(t ; t<NR_TASKS*4096 ; t+=4096)
+  	if(t->task.dir_pages_baseAddr == dir) {
+  		thread_alive++;
+  		break;
+  	}
+  
+  if(!thread_alive)
+	// Deallocate all the propietary physical pages
+	for (i=0; i<NUM_PAG_DATA; i++)
+	{
+	  free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+	  del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+	}
   
   /* Free task_struct */
   list_add_tail(&(current()->list), &freequeue);
   
   current()->PID=-1;
-  
   /* Restarts execution of the next process */
   sched_next_rr();
 }
@@ -237,12 +308,12 @@ int sys_get_stats(int pid, struct stats *st)
   if (pid<0) return -EINVAL;
   for (i=0; i<NR_TASKS; i++)
   {
-    if (task[i].task.PID==pid)
-    {
-      task[i].task.p_stats.remaining_ticks=remaining_quantum;
-      copy_to_user(&(task[i].task.p_stats), st, sizeof(struct stats));
-      return 0;
-    }
+	if (task[i].task.PID==pid)
+	{
+	  task[i].task.p_stats.remaining_ticks=remaining_quantum;
+	  copy_to_user(&(task[i].task.p_stats), st, sizeof(struct stats));
+	  return 0;
+	}
   }
   return -ESRCH; /*ESRCH */
 }
@@ -273,4 +344,64 @@ int sys_pollEvent(struct event_t *ev)
     return 1;
   }
   return 0;
+}
+
+
+sem_t* sys_semCreate(int initial_value)
+{
+  if(list_empty(&semFree)) return -ENOMEM;
+  struct list_head *lh = list_first(&semFree);
+  list_del(lh);
+  sem_t *s = list_entry(lh, sem_t, list);
+  INIT_LIST_HEAD(&(s->blocked_threads));
+  s->value = initial_value;
+  list_add_tail(&(s->list), &(current()->semaphores));
+  s->active = 1;
+  return s;
+}
+
+int sys_semWait(sem_t* s)
+{
+  if(!s->active) return -EINVAL;
+  if(s->value-- > 0) return 1;
+  list_add_tail(&(current()->list), &(s->blocked_threads));
+  current()->state=ST_BLOCKED;
+  sched_next_rr();
+  return 0;
+}
+int sys_semSignal(sem_t* s)
+{
+  if(!s->active) return -EINVAL;
+  if(s->value++ < 0) 
+  {
+  	struct list_head *lh = list_first(&(s->blocked_threads));
+  	struct task_struct *t = list_head_to_task_struct(lh);
+  	update_process_state_rr(t, &readyqueue);
+  }
+  return 1;
+}
+int sys_semDestroy(sem_t* s)
+{
+  if(!s->active) return -EINVAL;
+  struct list_head *pos;
+  int found = 0;
+  list_for_each(pos, &(current()->semaphores))
+  	if(pos == &(s->list))
+  	{
+  		found = 1;
+  		break;
+  	}
+  if(!found) return 0;
+  struct list_head *lh;
+  struct task_struct *t;
+  while(!list_empty(&(s->blocked_threads)))
+  {
+    lh = list_first(&(s->blocked_threads));
+    t = list_head_to_task_struct(lh);
+    update_process_state_rr(t, &readyqueue);
+  }
+  s->value = -1;
+  list_del(&(s->list));
+  list_add_tail(&(s->list), &semFree);
+  s->active = 0;
 }

@@ -9,12 +9,23 @@
 #include <types.h>
 #include <mm_address.h>
 #include <stats.h>
+#include <semaphore.h>
 
 
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
+
+/*
+ * We modify the task struct adding a list of semaphores for each one and create a struct semaphore containing the 
+ * values, list of blocked threads, and the header for the list of semaphores.
+ * 
+ * The list will be used to identify the created semaphores from the thread making the elimination of the semaphores cost O(1)
+ * when we destroy the thread.
+ * 
+ * However, when eliminating the 
+*/
 
 struct task_struct {
   int PID;			/* Process ID. This MUST be the first field of the struct. */
@@ -24,7 +35,9 @@ struct task_struct {
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
+  struct list_head semaphores;
 };
+
 
 union task_union {
   struct task_struct task;

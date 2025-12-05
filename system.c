@@ -90,6 +90,9 @@ int __attribute__((__section__(".text.main")))
   /* Initialize Scheduling */
   init_sched();
 
+  /* Initialize Free Semaphores list*/
+  init_semFree();
+
   /* Initialize idle task  data */
   init_idle();
   /* Initialize task 1 data */
