@@ -3,6 +3,7 @@
  */
 #include "include/list.h"
 #include "include/mm_address.h"
+#include "include/sched.h"
 #include "include/types.h"
 #include <devices.h>
 
@@ -67,6 +68,13 @@ int global_PID=1000;
 int ret_from_fork()
 {
   return 0;
+}
+
+void copy_heap(struct task_struct* child) {
+	page_table_entry* parent_PT = get_PT(current());
+	page_table_entry* child_PT = get_PT(child);
+
+	
 }
 
 int sys_fork(void)
@@ -144,7 +152,7 @@ int sys_fork(void)
   register_ebp = (int) get_ebp();
   register_ebp=(register_ebp - (int)current()) + (int)(uchild);
 
-  uchild->task.register_esp=register_ebp + sizeof(DWord);
+uchild->task.register_esp=register_ebp + sizeof(DWord);
 
   DWord temp_ebp=*(DWord*)register_ebp;
   /* Prepare child stack for context switch */
@@ -320,7 +328,7 @@ char* sys_getSlot(int num_bytes) {
 
 	struct list_head* lslot = list_first(&freeSlotq);
 	list_del(lslot);
-	list_add_tail(lslot, &(current()->din_mem->slots));
+	list_add_tail(lslot, &(current()->heap->slots));
 
 	struct slot_data* slot =  list_entry(lslot, struct slot_data, anchor);
 
@@ -344,7 +352,7 @@ int sys_delSlot(char* s) {
 	//encontrar slot
 	struct list_head* pos;
 	struct slot_data* slot;
-	list_for_each(pos, &(current()->din_mem->slots)) {
+	list_for_each(pos, &(current()->heap->slots)) {
 		slot = list_entry(pos, struct slot_data, anchor);
 
 		if (slot->init_addr == s){ //liberar recursos si encontrado

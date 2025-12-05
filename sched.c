@@ -23,7 +23,7 @@ union task_union protected_tasks[NR_TASKS+2]
 
 union task_union *task = &protected_tasks[1]; /* == union task_union task[NR_TASKS] */
 
-struct shared_memory process_memory[NR_TASKS];
+struct heap_s process_memory[NR_TASKS];
 
 #if 0
 struct task_struct *list_head_to_task_struct(struct list_head *l)
@@ -200,7 +200,7 @@ void init_task1(void)
 
   c->state=ST_RUN;
 
-	c->din_mem = &(process_memory[1]);
+	c->heap = &(process_memory[1]);
 
 	INIT_LIST_HEAD(&(process_memory[1].slots));
 

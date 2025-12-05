@@ -29,12 +29,12 @@ struct slot_data {
 	int num_pags;
 };
 
-struct shared_memory {
+struct heap_s {
 	struct list_head slots;
 };
 
 extern struct slot_data slots[MAX_KERNEL_SLOTS];
-extern struct shared_memory process_memory[NR_TASKS];
+extern struct heap_s process_memory[NR_TASKS];
 
 
 struct task_struct {
@@ -45,7 +45,7 @@ struct task_struct {
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
-	struct shared_memory* din_mem;
+	struct heap_s* heap;
 };
 
 union task_union {
