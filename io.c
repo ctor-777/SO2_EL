@@ -39,8 +39,15 @@ void change_fg_color(vga_color color) {
 }
 
 void change_pos(Byte new_x, Byte new_y) {
-	x = new_x;
-	y = new_y;
+	if(new_x >= NUM_COLUMNS)
+		x = NUM_COLUMNS - 1;
+	else
+		x = new_x;
+
+	if(new_y >= NUM_ROWS)
+		y = NUM_ROWS - 1;
+	else
+		y = new_y;
 }
 
 int pow(int base, int exponent) {

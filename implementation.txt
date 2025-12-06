@@ -3,9 +3,10 @@ mil 3/5.
 	implementada una maquina de estados dentro de printc para evaluar las sequencias ANSI de cambio de posición y cambio de color (ESCx;yH y ESC3/4cm)
 
 mil 3.
-	implementada la función change_pos que cambia la posición x e y que usa printc, añadida la correspondiente llamada a la maquina de estados;
+	implementada la función change_pos que cambia la posición x e y que usa printc, en caso de recivir un valor de x/y mayor del maximo de columnas o filas, assigna el valor maximo. Añadida la correspondiente llamada a la maquina de estados;
 
 mil 4.
 
 mil 5.
+	implementadas las funciones auxiliares para cambiar el color de fondo y de texto, guardan los valores pasados en las variables globales bg_color y fg_color. Modificada el apartado para imprimir caracteres de printc para imprimir characteres en printc para que assigne el byte de mas peso de la pantalla a bg_color y fg_color.
 		
