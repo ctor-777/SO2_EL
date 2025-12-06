@@ -20,6 +20,7 @@ Byte x, y=19;
 
 Byte fg_color = VGA_COLOR_GREEN;
 Byte bg_color = VGA_COLOR_BLACK;
+Byte blink = 0;
 
 /* Read a byte from 'port' */
 Byte inb (unsigned short port)
@@ -30,12 +31,12 @@ Byte inb (unsigned short port)
   return v;
 }
 
-void change_bg_color(vga_color color) {
-	bg_color = color;
+void change_bg_color(Byte color) {
+	bg_color = color & 0x7;
 }
 
-void change_fg_color(vga_color color) {
-	fg_color = color;
+void change_fg_color(Byte color) {
+	fg_color = color & 0xF;
 }
 
 void change_pos(Byte new_x, Byte new_y) {
@@ -131,9 +132,10 @@ void printc(char c)
 				state = CHANGE_FG_COLOR_SEL;
 			else if (c == '4')
 				state = CHANGE_BG_COLOR_SEL;
-			else if ((c >= '0') && (c <='9')) {
+			else if (is_num(c)) {
 				tmp_x = c - '0';
 				state = CHANGE_POS_X;
+				param_counter++;
 			} else if (c == 'J') { //clear screen
 				erase_display();
 				state = NO_SEQ;

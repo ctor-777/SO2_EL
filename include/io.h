@@ -56,11 +56,4 @@ void printc(char c);
 void printc_xy(Byte x, Byte y, char c);
 void printk(char *string);
 
-
-
-// temporal
-void change_bg_color(vga_color color);
-
-void change_fg_color(vga_color color);
-
 #endif  /* __IO_H__ */
