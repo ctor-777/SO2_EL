@@ -93,6 +93,12 @@ int __attribute__ ((__section__(".text.main")))
 	//
 	//	auria de escriure TEST
 	write(1, "\nTEST12\b\b", 9);
+
+	//TEST13: 
+	//	comprovació dels maxims valor per texte i fons
+	//
+	//	auria de escriure TEST13 amb text blanc i fons gris
+	write(1, "\n315m47mTEST13", 16);
 	//TEST6: 
 	  while(1) { 
 
