@@ -1,8 +1,8 @@
 
 mil 3/5.
 	implementada una maquina d'estats dins de printc per evaluar les sequencies 
-	ANSI (inspirades) de cambi de posició y de cambi de color (ESCx;yH y ESC3/4colorm)
-	La maquina te 6 estats possibles:
+	ANSI (inspirades en) de cambi de posició y de cambi de color (ESCx;yH y 
+	ESC3/4colorm respectivament) La maquina te 6 estats possibles:
 		NO_SEQ: l'estat per defecte, on imprimex els caracter que arriben
 		INIT_SEQ: l'estat el que pasa cuan rep un ESC.
 		CHANGE_BG_COLOR_SEL: l'estat al que pasa cuan rep un 4 a INIT_SEQ, guarda tots 
@@ -23,7 +23,8 @@ mil 3/5.
 
 
 mil 3.
-	implementada la funció change_pos que cambia la posició x e y que usa printc.
+	implementada la funció change_pos que cambia la posició x e y que usa printc, e
+	incorporada la trucada a l'estat corresponent.
 
 mil 4.
 	cambiat printc per que cuan arribi el character backspace es mogi una posició 
@@ -33,7 +34,8 @@ mil 5.
 	implementdes les funcions auxiliars per cambiar el color de fons y de text, 
 	guarden els valor en les variables globals bg-color y fg_color. Modificat el 
 	apartat de printc per imprimir caracter de forma que utilitzi les variables 
-	globals per definir els color (posant-les als bits de mes pes del Word).
+	globals per definir els color (posant-les als bits de mes pes del Word de 
+	pantalla), e incorporada la trucada en els estats corresponents.
 		
 
 inputs erronis:
