@@ -1,0 +1,73 @@
+
+--------------------------------- CLONE -----------------------------------------
+
+L'implementació del clone es similar a la del fork, amb la diferencia, primer de 
+que el clone no crea una nova taula de paginas, ni copia la memoria de dades al 
+fill, ja que en un mateix process la memoria es compartida, i segon, que el nou 
+fill, ha de retornar a la funció especificada amb la pila especificada y amb el 
+parametre especificat a la pila.
+
+Per implementar aixo, he reciclar el codi del fork, eliminant la secció del codi 
+encarregada de generar la nova taula de paginas, reservar nova memoria de dades 
+y copiar les dades del pare. A diferencia del fork, per afegir el parametre a 
+la nova pila s'han incorporat les linies:
+
+	stack-=sizeof(unsigned long);
+	*((long unsigned int*)stack) = parameter;
+	stack-=sizeof(unsigned long);
+	*((long unsigned int*)stack) = 0;
+	
+per posar la funció pasada i la pila passada al contexte hardware, de manera que
+al tornar al contexte del nou fil retorni a la posició adequada amb la pila 
+adequada, s'han incorporat les linies:
+	
+	unthread->stack[KERNEL_STACK_SIZE - 5] = function;
+	unthread->stack[KERNEL_STACK_SIZE - 2] = stack;
+
+*la variable stack ha sigut modificada al pas anterior, a l'hora de fer el "push"
+del parametre y de una direcció de retorn nula, d'aquesta manera el esp hardware
+no apuntara a la base, si no al top de la pila, com es requerit.
+
+Finalment, com el fork no te parametres, s'han agut de incorporar les proves per
+verificar que els parametres son correctes:
+
+	if (!access_ok(VERIFY_READ, function, 1))
+		return -EINVAL;
+
+	if (!access_ok(VERIFY_WRITE, stack, 1))
+		return -EINVAL;
+		 
+*el parametre no es necesari provar-ho, ja que un valor null (o cualsevol valor) 
+es valid en aquest cas.
+
+--------------------------------- EXIT -----------------------------------------
+
+per a l'exit es necessari alliberar memoria unicament si no hi queda cap fil
+del process, per comprovar aixo, es reocrre la lliste de task structs buscant
+tots els processos que comparteixen taula de pagines amb el current, si hi ha 
+cap actiu (PID != -1), no s'allibera la memoria, nomes en cas contrari s'allibera.
+
+--------------------------------- TESTS ----------------------------------------
+
+totes les proves, es troben a la carpeta tests, con copies de user.c, per
+provar-ho, s'ha de copiar la prova pertinent a la base coma a user.c i compilar.
+
+basic:
+	prova un funcionament correcte de les funcions clone y exit, cuan es prem una
+	tecla fa un clone, amb valors correctes de function y stack, y ambd el event_t
+	coma parametre, la funció imprimeix la tecla pulsada per pantalla y fa exit.
+
+	Per cada tecla, s'hauria de veure per pantalla la tecla impresa dues vegades
+	(una per press un altre pre release).
+
+stack-NULL:
+	prova de la funció clone amb un valor de pila incorrecte.
+
+	No s'hauria de veure cap tecla per pantall, ja que el clone falla, s'ahuria de
+	veure el missatge "error al clone" per cada press y release.
+	
+fork en un hilo:
+
+
+cambiar alloc dir, para que no coja el directorio de un hilo
+errno por proceso

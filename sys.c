@@ -67,12 +67,19 @@ int ret_from_fork()
 }
 
 int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
+	if (!access_ok(VERIFY_READ, function, 1))
+		return -EINVAL;
+
+	if (!access_ok(VERIFY_WRITE, stack, 1))
+		return -EINVAL;
+
+
 	struct list_head *lhcurrent = NULL;
 	union task_union *unthread;
 	
 	/* Any free task_struct? */
 	if (list_empty(&freequeue)) return -ENOMEM;
-	
+
 	lhcurrent=list_first(&freequeue);
 	
 	list_del(lhcurrent);
@@ -99,14 +106,15 @@ int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
 	unthread->task.register_esp-=sizeof(DWord);
 	*(DWord*)(unthread->task.register_esp)=temp_ebp;
 
+	//set the parameter in the stack and a null return address.
 	stack-=sizeof(unsigned long);
 	*((long unsigned int*)stack) = parameter;
 	stack-=sizeof(unsigned long);
 	*((long unsigned int*)stack) = 0;
-	//set return address to function
+	//set return address to function and the hardware saved esp 
+	//as the pointer to the null return address
 	unthread->stack[KERNEL_STACK_SIZE - 5] = function;
 	unthread->stack[KERNEL_STACK_SIZE - 2] = stack;
-	*((long unsigned int*)stack) = parameter;
 		
 
 	
@@ -253,33 +261,35 @@ int sys_gettime()
 
 void sys_exit()
 {  
-  int i;
-  int thread_alive = -1;
-  page_table_entry *process_PT = get_PT(current());
+	int i;
+	int thread_alive = -1;
+	page_table_entry *process_PT = get_PT(current());
 
-  page_table_entry *dir = current()->dir_pages_baseAddr;
-  union task_union *t = task;
+	page_table_entry *dir = current()->dir_pages_baseAddr;
+	union task_union *t = task;
 
-  for(t ; t<NR_TASKS*4096 ; t+=4096)
-  	if(t->task.dir_pages_baseAddr == dir) {
-  		thread_alive++;
-  		break;
-  	}
-  
-  if(!thread_alive)
-	// Deallocate all the propietary physical pages
-	for (i=0; i<NUM_PAG_DATA; i++)
-	{
-	  free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
-	  del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+	for(t ; t<NR_TASKS*4096 ; t+=4096) {
+		if(t->task.dir_pages_baseAddr == dir && t->task.PID != -1) {
+			thread_alive++;
+			break;
+		}
+	}
+
+	if(!thread_alive) {
+		// Deallocate all the propietary physical pages
+		for (i=0; i<NUM_PAG_DATA; i++)
+		{
+			free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
+			del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
+		}
 	}
   
-  /* Free task_struct */
-  list_add_tail(&(current()->list), &freequeue);
-  
-  current()->PID=-1;
-  /* Restarts execution of the next process */
-  sched_next_rr();
+	/* Free task_struct */
+	list_add_tail(&(current()->list), &freequeue);
+
+	current()->PID=-1;
+	/* Restarts execution of the next process */
+	sched_next_rr();
 }
 
 /* System call to force a task switch */
