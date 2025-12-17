@@ -77,10 +77,10 @@ int ret_from_fork()
 
 int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
 	if (!access_ok(VERIFY_READ, function, 1))
-		return -EINVAL;
+		return -EFAULT;
 
 	if (!access_ok(VERIFY_WRITE, stack, 1))
-		return -EINVAL;
+		return -EFAULT;
 
 
 	struct list_head *lhcurrent = NULL;

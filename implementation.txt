@@ -74,12 +74,12 @@ basic:
 stack-NULL:
 	prova de la funció clone amb un valor de pila incorrecte.
 
-	S'auria de veure "error al clone (14)" 14 per EFAULT
+	S'auria de veure "clone error: 14" 14 per EFAULT
 
 function NULL:
 	prova de la funció clone amb un valor de funció incorrecte.
 
-	S'auria de veure "error al clone (14)" 14 per EFAULT
+	S'auria de veure "clone error: 14" 14 per EFAULT
 	
 errno syscalls:
 	prova les syscall per llegir y modificar el errno, ambd dos trucades erronies
@@ -97,13 +97,20 @@ memoria compartida:
 	prova que efectivament la memoria entre fils es compartida, modificant una
 	variable global.
 
-fork en un hilo:
-
-
-
 exit de un hilo no libera mem:
+	prova que fer exit nomes dun fil no allibera la memoria, per comprovar-ho,
+	es fa exit a un fil i s'accedeix a una global a un altre.
 
 exit del segundo si libera mem:
+	prova que fer exit de tots els fils allibera memoria, per comprovar-ho,
+	es fa exit dels dos fils y vaig incorporar uns print de debug a exit, per
+	veure si esta alliberant la memoria correctament.
 
-no sobreescribir pagina de tablas:
-º
+no sobreesscriure pagina de tablas + fork a un fil:
+	prova que un fork parallel a un fils que no tingui la taula de pagines a la
+	mateixa posició que el task struct, no modificara la pagina de taules, a mes
+	fa un fork dins d'un fil, fa un clone, y un exit de l'original, dins de la 
+	funció del fil, fa tants forks com espai hi ha lliurr (fork fins ENOMEM), a 
+	tots els forks sobreescriu una variable global, si la logica es correcta, cap 
+	process auria d'haver escollit la taula del fil, y per tant el valor al fil 
+	auria de ser el mateix que era.

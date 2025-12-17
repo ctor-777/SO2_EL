@@ -7,8 +7,10 @@ int pid;
 struct event_t global;
 
 void thread_func(void* args) {
-	write(1, "\nexiting thread 2\n", 17);
-	exit();
+	char x[2];
+	x[0] = global.scandcode;
+	write(1,x,1);
+	while(1){;}
 }
 
 int __attribute__ ((__section__(".text.main")))
@@ -23,7 +25,6 @@ int __attribute__ ((__section__(".text.main")))
 		if(x)
 		{
 			int i = clone(thread_func, (void *)&ev, (&i) - (10 * sizeof(unsigned long)));
-			write(1, "\nexiting thread 1\n", 17);
 			exit();
 		}
 	}

@@ -4,10 +4,12 @@ char buff[24];
 
 int pid;
 
-struct event_t global;
+unsigned long stack[100];
 
 void thread_func(void* args) {
-	write(1, "\nexiting thread 2\n", 17);
+	char x[2];
+	x[0] = ((struct event_t *)args)->scandcode;
+	write(1,x,1);
 	exit();
 }
 
@@ -19,12 +21,14 @@ int __attribute__ ((__section__(".text.main")))
 
 	struct event_t ev;
 	while(1) { 
-		int x=pollEvent(&global);
+		int x=pollEvent(&ev);
 		if(x)
 		{
-			int i = clone(thread_func, (void *)&ev, (&i) - (10 * sizeof(unsigned long)));
-			write(1, "\nexiting thread 1\n", 17);
-			exit();
+			int i = clone(0, (void *)&ev, stack);
+			if (i < 0) {
+				write(1, "\nclone failed: ", 15);
+				perror();
+			}
 		}
 	}
 }
