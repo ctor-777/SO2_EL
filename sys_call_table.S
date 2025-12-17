@@ -45,8 +45,8 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall	//40
 	.long sys_ni_syscall	//41
 	.long sys_ni_syscall	//42
-	.long sys_ni_syscall	//43
-	.long sys_ni_syscall	//44
+	.long sys_get_errno		//43
+	.long sys_set_errno		//44
 	.long sys_ni_syscall	//45
 	.long sys_ni_syscall	//46
 	.long sys_ni_syscall	//47

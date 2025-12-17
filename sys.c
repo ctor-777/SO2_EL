@@ -1,6 +1,7 @@
 /*
  * sys.c - Syscalls implementation
  */
+#include "include/sched.h"
 #include <devices.h>
 
 #include <utils.h>
@@ -57,6 +58,14 @@ int sys_ni_syscall()
 int sys_getpid()
 {
 	return current()->PID;
+}
+
+int sys_get_errno() {
+	return current()->errno;
+}
+
+void sys_set_errno(int nerrno) {
+	current()->errno = nerrno;
 }
 
 int global_PID=1000;
@@ -225,9 +234,9 @@ int sys_fork(void)
 #define TAM_BUFFER 512
 
 int sys_write(int fd, char *buffer, int nbytes) {
-char localbuffer [TAM_BUFFER];
-int bytes_left;
-int ret;
+	char localbuffer [TAM_BUFFER];
+	int bytes_left;
+	int ret;
 
 	if ((ret = check_fd(fd, ESCRIPTURA)))
 		return ret;
@@ -262,20 +271,12 @@ int sys_gettime()
 void sys_exit()
 {  
 	int i;
-	int thread_alive = -1;
 	page_table_entry *process_PT = get_PT(current());
 
 	page_table_entry *dir = current()->dir_pages_baseAddr;
-	union task_union *t = task;
 
-	for(t ; t<NR_TASKS*4096 ; t+=4096) {
-		if(t->task.dir_pages_baseAddr == dir && t->task.PID != -1) {
-			thread_alive++;
-			break;
-		}
-	}
-
-	if(!thread_alive) {
+	current()->PID=-1;
+	if(!page_used(dir)) {
 		// Deallocate all the propietary physical pages
 		for (i=0; i<NUM_PAG_DATA; i++)
 		{
@@ -287,7 +288,6 @@ void sys_exit()
 	/* Free task_struct */
 	list_add_tail(&(current()->list), &freequeue);
 
-	current()->PID=-1;
 	/* Restarts execution of the next process */
 	sched_next_rr();
 }

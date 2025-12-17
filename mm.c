@@ -38,17 +38,18 @@ TSS         tss;
   
 void init_dir_pages()
 {
-int i;
+	int i;
 
-for (i = 0; i< NR_TASKS; i++) {
-  dir_pages[i][ENTRY_DIR_PAGES].entry = 0;
-  dir_pages[i][ENTRY_DIR_PAGES].bits.pbase_addr = (((unsigned int)&pagusr_table[i]) >> 12);
-  dir_pages[i][ENTRY_DIR_PAGES].bits.user = 1;
-  dir_pages[i][ENTRY_DIR_PAGES].bits.rw = 1;
-  dir_pages[i][ENTRY_DIR_PAGES].bits.present = 1;
+	for (i = 0; i< NR_TASKS; i++) {
+		dir_pages[i][ENTRY_DIR_PAGES].entry = 0;
+		dir_pages[i][ENTRY_DIR_PAGES].bits.pbase_addr = (((unsigned int)&pagusr_table[i]) >> 12);
+		dir_pages[i][ENTRY_DIR_PAGES].bits.user = 1;
+		dir_pages[i][ENTRY_DIR_PAGES].bits.rw = 1;
+		dir_pages[i][ENTRY_DIR_PAGES].bits.present = 1;
 
-}
 
+
+	}
 }
 
 /* Initializes the page table (kernel pages only) */
@@ -266,3 +267,4 @@ void del_ss_pag(page_table_entry *PT, unsigned logical_page)
 unsigned int get_frame (page_table_entry *PT, unsigned int logical_page){
      return PT[logical_page].bits.pbase_addr; 
 }
+

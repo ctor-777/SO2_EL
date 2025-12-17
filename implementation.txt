@@ -47,9 +47,20 @@ del process, per comprovar aixo, es reocrre la lliste de task structs buscant
 tots els processos que comparteixen taula de pagines amb el current, si hi ha 
 cap actiu (PID != -1), no s'allibera la memoria, nomes en cas contrari s'allibera.
 
+
+------------------------------ ALLOCATE_DIR ------------------------------------
+
+Modificat allocate dir perque, nomes utilitzi taulas de pagina lliures. Si la
+corresponent está ocupada, recorre les taules fins que troba una lliure.
+
+--------------------------------- ERRNO ----------------------------------------
+
+mogut el errno al task_struct, ara accedir y modificar el errno es fa mitjancant 
+trucades al sistema (get_errno, set_errno)
+
 --------------------------------- TESTS ----------------------------------------
 
-totes les proves, es troben a la carpeta tests, con copies de user.c, per
+totes les proves, es troben a la carpeta tests, son copies de user.c, per
 provar-ho, s'ha de copiar la prova pertinent a la base coma a user.c i compilar.
 
 basic:
@@ -63,11 +74,36 @@ basic:
 stack-NULL:
 	prova de la funció clone amb un valor de pila incorrecte.
 
-	No s'hauria de veure cap tecla per pantall, ja que el clone falla, s'ahuria de
-	veure el missatge "error al clone" per cada press y release.
+	S'auria de veure "error al clone (14)" 14 per EFAULT
+
+function NULL:
+	prova de la funció clone amb un valor de funció incorrecte.
+
+	S'auria de veure "error al clone (14)" 14 per EFAULT
 	
+errno syscalls:
+	prova les syscall per llegir y modificar el errno, ambd dos trucades erronies
+	de write, y dos perror despres de cada una.
+
+	Auria de sortir per pantalla EBADF (9) y EFAULT (14)
+
+errno overwrite:
+	prova si el canvi del errno en un fil afecta a un altre, errno incial es 9,
+	cada vegada que es prem una tecla un nou fil es crea y modifical l'errno a 14.
+
+	No auria de cambiar l'errno del primer fil.
+
+memoria compartida:
+	prova que efectivament la memoria entre fils es compartida, modificant una
+	variable global.
+
 fork en un hilo:
 
 
-cambiar alloc dir, para que no coja el directorio de un hilo
-errno por proceso
+
+exit de un hilo no libera mem:
+
+exit del segundo si libera mem:
+
+no sobreescribir pagina de tablas:
+º

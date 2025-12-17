@@ -2,14 +2,19 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+// #include "include/sched.h"
+#include "include/sched.h"
+#include "include/types.h"
 #include <types.h>
 #include <hardware.h>
 #include <segment.h>
 #include <sched.h>
 #include <mm.h>
+#include <sched.h>
 #include <io.h>
 #include <utils.h>
 #include <p_stats.h>
+#include <libc.h>
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -57,6 +62,26 @@ page_table_entry * get_PT (struct task_struct *t)
 	return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
+int page_used(page_table_entry* dir) {
+	int thread_alive = 0;
+	page_table_entry *process_PT = get_PT(current());
+
+	char buff[10];
+
+	union task_union *t;
+
+	for(int i = 1 ; i < NR_TASKS; i++) {
+		t = &task[i];
+		if(t->task.dir_pages_baseAddr == dir ) {
+			if (t->task.PID != -1) {
+				thread_alive++;
+				break;
+			}
+		}
+	}
+
+	return thread_alive;
+}
 
 int allocate_DIR(struct task_struct *t) 
 {
@@ -64,7 +89,21 @@ int allocate_DIR(struct task_struct *t)
 
 	pos = ((int)t-(int)task)/sizeof(union task_union);
 
-	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
+	char buff[5];
+
+	page_table_entry* tmp = (page_table_entry*) &dir_pages[pos];
+
+	if (page_used(tmp)) {
+		for(int i = 1; i < NR_TASKS; i++) {
+			page_table_entry* tmp = &dir_pages[i];
+			if (!page_used(tmp)) {
+				t->dir_pages_baseAddr = tmp; 
+				return 1;
+			}
+		}
+	}
+
+	t->dir_pages_baseAddr = tmp; 
 
 	return 1;
 }

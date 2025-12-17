@@ -33,7 +33,9 @@ ENTRY(write)
 /* Common code for negative return */
 nok:
 	neg %eax
-	mov %eax, errno
+	pushl %eax
+	call set_errno
+	popl %eax
 	mov $-1, %eax
 	popl %ebp
 	ret
@@ -141,5 +143,26 @@ ENTRY(pollEvent)
 	popl %ebx
 	test %eax, %eax
 	js nok
+	popl %ebp
+	ret
+
+/* int get_errno() */
+ENTRY(get_errno)
+	pushl %ebp
+	movl %esp, %ebp
+	movl $43, %eax
+	call syscall_sysenter
+	popl %ebp
+	ret
+
+/* void set_errno(int errno) */
+ENTRY(set_errno)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $44, %eax
+	movl 0x8(%ebp), %ebx;	//&ev
+	call syscall_sysenter
+	popl %ebx
 	popl %ebp
 	ret

@@ -24,6 +24,7 @@ struct task_struct {
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
+	int errno;
 };
 
 union task_union {
@@ -76,5 +77,8 @@ int needs_sched_rr();
 void update_sched_data_rr();
 
 void init_stats(struct stats *s);
+
+
+int page_used(page_table_entry* dir);
 
 #endif  /* __SCHED_H__ */
