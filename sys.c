@@ -82,6 +82,8 @@ int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
 	if (!access_ok(VERIFY_WRITE, stack, 1))
 		return -EFAULT;
 
+	if (global_PID < 0)
+		return -ENOMEM;
 
 	struct list_head *lhcurrent = NULL;
 	union task_union *unthread;
@@ -144,6 +146,9 @@ int sys_fork(void)
   
   /* Any free task_struct? */
   if (list_empty(&freequeue)) return -ENOMEM;
+
+	if (global_PID < 0)
+		return -ENOMEM;
 
   lhcurrent=list_first(&freequeue);
   
