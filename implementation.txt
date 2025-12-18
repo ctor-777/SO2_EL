@@ -1,0 +1,67 @@
+
+-------------------------- ESTRUCTURES DE DADES --------------------------------
+
+Per a la implementació de la memoria dinamica, he implementat dues estructures
+noves:
+
+	struct slot_data {
+		struct list_head anchor;
+		char* init_addr;
+		int num_pags;
+	};
+
+	struct heap_s {
+		struct list_head slots;
+	};
+
+slot_data guarda l'informació d'un slot, punter base y mida. heap_s guarda el
+cap de la llista del heap (llista de slots) d'un process. Aquestes estructures
+es guarde fisicament a dues llistes de mida MAX_KERNEL_SLOTS (100 per defecte)
+y NR_TASKS:
+
+	extern struct slot_data slots[MAX_KERNEL_SLOTS];
+	extern struct heap_s process_memory[NR_TASKS];
+
+Per obtenir els slots lliures, he creat una llista de slots lliures: freeSlotQ.
+
+------------------------------ GETSLOT Y DELSLOT -------------------------------
+
+el getslot fa el seguent:
+	1.comprova parametres d'entrada (0 < num_bytes < memoria disponible)	
+	2.reserva paginas fisiques y les mapea (el mapeig es continu, comença a 
+	  HEAP_START y per cada getslot avança el nombre de bytes adequat).
+	3.afegeix l'informació del slot a la llista del process, y elimina el slot de 
+	  la llista de slots lliures.
+	4.fa un flush de la TLB.
+	5.retorna la addressa base del slot reservat.
+	
+el delslot fa el sequent:
+	1.comprova que el parametre d'entrada esta alineat a una pagina.
+	2.recorre la llista de slots per buscar el que te addressa base igual al la 
+	  passada.
+	3.allibera la memoria i elimina el mapa de la taula de paginas.
+	4.fa un flush de la TLB.
+	5.retorna 0 si correcte.
+
+----------------------------------- FORK ---------------------------------------
+
+Per que el heap es copi durant el fork, s'implementa la funció copy heap, que 
+copia la llista y el contingut del heap del process pare al fill.
+
+----------------------------------- EXIT ---------------------------------------
+
+el heap s'ha d'alliberar al exit si no hi ha cap fil actiu, per fer aixo, 
+s'implementa la funció allibera_heap, que recorre la llista del heap del process
+alliberant la memoria que te reservada.
+
+----------------------------------- TESTS --------------------------------------
+
+parametres incorrectes getSlot:
+
+parametres incorrectes delSlot:
+
+fork copia heap:
+
+exit borra heap:
+
+fils comparteixen heap:

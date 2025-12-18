@@ -299,11 +299,16 @@ void free_allocated(page_table_entry* current_PT, int start_page, int num_pages)
 
 char* sys_getSlot(int num_bytes) {
 	static unsigned int current_page = HEAP_START >> 12;
-	int num_pags = (num_bytes >> 12) + 1;
+
+	if(num_bytes <= 0) {
+		return 0;
+	}
 
 	if(num_pags > (TOTAL_PAGES - current_page)) { //requested more memory than logically available
 		return 0;
 	}
+
+	int num_pags = (num_bytes >> 12) + 1;
 
 	//reservar paginas fisicas y mapear
 	
