@@ -82,7 +82,7 @@ int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
 	if (!access_ok(VERIFY_WRITE, stack, 1))
 		return -EFAULT;
 
-	if (global_PID < 0)
+	if (global_PID == 2147483647)
 		return -ENOMEM;
 
 	struct list_head *lhcurrent = NULL;
@@ -147,7 +147,7 @@ int sys_fork(void)
   /* Any free task_struct? */
   if (list_empty(&freequeue)) return -ENOMEM;
 
-	if (global_PID < 0)
+	if (global_PID == 2147483647)
 		return -ENOMEM;
 
   lhcurrent=list_first(&freequeue);
@@ -273,6 +273,8 @@ int sys_gettime()
   return zeos_ticks;
 }
 
+extern struct list_head freedirsq;
+
 void sys_exit()
 {  
 	int i;
@@ -288,10 +290,13 @@ void sys_exit()
 			free_frame(get_frame(process_PT, PAG_LOG_INIT_DATA+i));
 			del_ss_pag(process_PT, PAG_LOG_INIT_DATA+i);
 		}
+		/* Free directory */
+		list_add_tail(current()->dir, &freedirsq);
 	}
   
 	/* Free task_struct */
 	list_add_tail(&(current()->list), &freequeue);
+
 
 	/* Restarts execution of the next process */
 	sched_next_rr();

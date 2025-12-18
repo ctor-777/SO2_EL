@@ -151,5 +151,4 @@ typedef union
   } bits;
 } page_table_entry;
 
-
 #endif  /* __TYPES_H__ */

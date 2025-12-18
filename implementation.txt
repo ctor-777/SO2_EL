@@ -50,8 +50,11 @@ cap actiu (PID != -1), no s'allibera la memoria, nomes en cas contrari s'alliber
 
 ------------------------------ ALLOCATE_DIR ------------------------------------
 
-Modificat allocate dir perque, nomes utilitzi taulas de pagina lliures. Si la
-corresponent está ocupada, recorre les taules fins que troba una lliure.
+Modificat allocate dir perque, nomes utilitzi taulas de pagina lliures. 
+Implementat una llista de taules lliures, am punters a la llista original, per
+allocar una nova taula agafa el primer element, i al exit, s'afegeix la taula del
+process a la llista de nou. Una referencia al element de la llista que apunta a 
+la taula del process es guarda al task_struct.
 
 --------------------------------- ERRNO ----------------------------------------
 

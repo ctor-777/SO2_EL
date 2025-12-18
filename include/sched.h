@@ -24,6 +24,7 @@ struct task_struct {
   enum state_t state;		/* State of the process */
   int total_quantum;		/* Total quantum of the process */
   struct stats p_stats;		/* Process stats */
+	struct dir_list* dir;
 	int errno;
 };
 
@@ -36,6 +37,10 @@ extern union task_union protected_tasks[NR_TASKS+2];
 extern union task_union *task; /* Vector de tasques */
 extern struct task_struct *idle_task;
 
+struct dir_list {
+	struct list_head anchor;
+	page_table_entry* dir;
+};
 
 #define KERNEL_ESP(t)       	(DWord) &(t)->stack[KERNEL_STACK_SIZE]
 

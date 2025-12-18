@@ -4,6 +4,7 @@
 
 // #include "include/sched.h"
 #include "include/sched.h"
+#include "include/list.h"
 #include "include/types.h"
 #include <types.h>
 #include <hardware.h>
@@ -83,27 +84,22 @@ int page_used(page_table_entry* dir) {
 	return thread_alive;
 }
 
+extern struct list_head freedirsq;
+
 int allocate_DIR(struct task_struct *t) 
 {
 	int pos;
 
 	pos = ((int)t-(int)task)/sizeof(union task_union);
 
-	char buff[5];
+	struct list_head* dir = list_first(&freedirsq);
+	list_del(dir);
+	struct dir_list* dir_list = list_entry(dir, struct dir_list, anchor);
+	struct page_table_entry* dir_addr = dir_list->dir;
 
-	page_table_entry* tmp = (page_table_entry*) &dir_pages[pos];
+	t->dir = dir;
 
-	if (page_used(tmp)) {
-		for(int i = 1; i < NR_TASKS; i++) {
-			page_table_entry* tmp = &dir_pages[i];
-			if (!page_used(tmp)) {
-				t->dir_pages_baseAddr = tmp; 
-				return 1;
-			}
-		}
-	}
-
-	t->dir_pages_baseAddr = tmp; 
+	t->dir_pages_baseAddr = dir_addr; 
 
 	return 1;
 }
@@ -209,7 +205,7 @@ void init_idle (void)
 
   init_stats(&c->p_stats);
 
-  allocate_DIR(c);
+  // allocate_DIR(c);
 
   uc->stack[KERNEL_STACK_SIZE-1]=(unsigned long)&cpu_idle; /* Return address */
   uc->stack[KERNEL_STACK_SIZE-2]=0; /* register ebp */
@@ -233,6 +229,8 @@ void init_task1(void)
   c->total_quantum=DEFAULT_QUANTUM;
 
   c->state=ST_RUN;
+
+	c->errno = 0;
 
   remaining_quantum=c->total_quantum;
 
