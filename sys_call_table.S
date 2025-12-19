@@ -45,8 +45,8 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall	//40
 	.long sys_ni_syscall	//41
 	.long sys_ni_syscall	//42
-	.long sys_ni_syscall	//43
-	.long sys_ni_syscall	//44
+	.long sys_get_errno		//43
+	.long sys_set_errno		//44
 	.long sys_ni_syscall	//45
 	.long sys_ni_syscall	//46
 	.long sys_ni_syscall	//47
@@ -58,6 +58,6 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall	//53
 	.long sys_ni_syscall	//54
 	.long sys_ni_syscall	//55
-	.long sys_ni_syscall	//56 (clone)
+	.long sys_clone	//56 (clone)
 .globl MAX_SYSCALL
 MAX_SYSCALL = (. - sys_call_table)/4

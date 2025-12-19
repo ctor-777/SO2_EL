@@ -2,14 +2,20 @@
  * sched.c - initializes struct for task 0 anda task 1
  */
 
+// #include "include/sched.h"
+#include "include/sched.h"
+#include "include/list.h"
+#include "include/types.h"
 #include <types.h>
 #include <hardware.h>
 #include <segment.h>
 #include <sched.h>
 #include <mm.h>
+#include <sched.h>
 #include <io.h>
 #include <utils.h>
 #include <p_stats.h>
+#include <libc.h>
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -57,6 +63,28 @@ page_table_entry * get_PT (struct task_struct *t)
 	return (page_table_entry *)(((unsigned int)(t->dir_pages_baseAddr->bits.pbase_addr))<<12);
 }
 
+int page_used(page_table_entry* dir) {
+	int thread_alive = 0;
+	page_table_entry *process_PT = get_PT(current());
+
+	char buff[10];
+
+	union task_union *t;
+
+	for(int i = 1 ; i < NR_TASKS; i++) {
+		t = &task[i];
+		if(t->task.dir_pages_baseAddr == dir ) {
+			if (t->task.PID != -1) {
+				thread_alive++;
+				break;
+			}
+		}
+	}
+
+	return thread_alive;
+}
+
+extern struct list_head freedirsq;
 
 int allocate_DIR(struct task_struct *t) 
 {
@@ -64,7 +92,14 @@ int allocate_DIR(struct task_struct *t)
 
 	pos = ((int)t-(int)task)/sizeof(union task_union);
 
-	t->dir_pages_baseAddr = (page_table_entry*) &dir_pages[pos]; 
+	struct list_head* dir = list_first(&freedirsq);
+	list_del(dir);
+	struct dir_list* dir_list = list_entry(dir, struct dir_list, anchor);
+	struct page_table_entry* dir_addr = dir_list->dir;
+
+	t->dir = dir;
+
+	t->dir_pages_baseAddr = dir_addr; 
 
 	return 1;
 }
@@ -170,7 +205,7 @@ void init_idle (void)
 
   init_stats(&c->p_stats);
 
-  allocate_DIR(c);
+  // allocate_DIR(c);
 
   uc->stack[KERNEL_STACK_SIZE-1]=(unsigned long)&cpu_idle; /* Return address */
   uc->stack[KERNEL_STACK_SIZE-2]=0; /* register ebp */
@@ -194,6 +229,8 @@ void init_task1(void)
   c->total_quantum=DEFAULT_QUANTUM;
 
   c->state=ST_RUN;
+
+	c->errno = 0;
 
   remaining_quantum=c->total_quantum;
 

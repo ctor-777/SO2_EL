@@ -6,7 +6,6 @@
 
 #include <types.h>
 
-int errno;
 int REGS[7]; // Space to save REGISTERS
 
 void itoa(int a, char *b)
@@ -46,7 +45,8 @@ int strlen(char *a)
 
 void perror()
 {
-  char buffer[256];
+  char buffer[20];
+	int errno = get_errno();
 
   itoa(errno, buffer);
 

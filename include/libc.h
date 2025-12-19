@@ -8,7 +8,6 @@
 
 #include <stats.h>
 
-extern int errno;
 
 /*
  * We declare the struct event_t in libc.h because it's a user-mode header where we can access it from the user code and also from the system code.
@@ -37,6 +36,12 @@ void exit();
 int yield();
 
 int get_stats(int pid, struct stats *st);
+
+int clone(void (*function)(void* arg), void*parameter, char* stack);
+
+int get_errno();
+
+void set_errno(int errno);
 
 /*
  * We declare the wrapper header for the syscall

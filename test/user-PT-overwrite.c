@@ -4,10 +4,10 @@ char buff[24];
 
 int global;
 
-char stack[1024];
+unsigned long stack[1024];
 
-void not_optimize() {
-	write(1, "\nin no opt", 10);
+void not_optimize(unsigned int x) {
+    __asm__ volatile("" : : "r"(x) : "memory");
 }
 
 void thread_func(void* args) {
@@ -58,12 +58,12 @@ void thread_func(void* args) {
 		while(1) {;}
 	}
 	if (pid < 0) {
-		yield();
-		write(1, "end global value", 18);
-		itoa(global, buff);
-		write(1, buff, 1);
-		write(1, "\n", 1);
-		while(1) {;}	
+		while(1) {
+			write(1, "end global value", 18);
+			itoa(global, buff);
+			write(1, buff, 1);
+			write(1, "\n", 1);
+		};	
 	}
 	while(1) {;}
 	exit();

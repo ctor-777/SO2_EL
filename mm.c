@@ -2,6 +2,8 @@
  * mm.c - Memory Management: Paging & segment memory management
  */
 
+#include "include/list.h"
+#include "include/sched.h"
 #include <types.h>
 #include <mm.h>
 #include <segment.h>
@@ -22,6 +24,10 @@ Register    gdtR;
 page_table_entry dir_pages[NR_TASKS][TOTAL_PAGES]
   __attribute__((__section__(".data.task")));
 
+struct dir_list free_dirs[NR_TASKS];
+
+struct list_head freedirsq;
+
 page_table_entry pagusr_table[NR_TASKS][TOTAL_PAGES]
   __attribute__((__section__(".data.task")));
 
@@ -38,17 +44,20 @@ TSS         tss;
   
 void init_dir_pages()
 {
-int i;
+	int i;
 
-for (i = 0; i< NR_TASKS; i++) {
-  dir_pages[i][ENTRY_DIR_PAGES].entry = 0;
-  dir_pages[i][ENTRY_DIR_PAGES].bits.pbase_addr = (((unsigned int)&pagusr_table[i]) >> 12);
-  dir_pages[i][ENTRY_DIR_PAGES].bits.user = 1;
-  dir_pages[i][ENTRY_DIR_PAGES].bits.rw = 1;
-  dir_pages[i][ENTRY_DIR_PAGES].bits.present = 1;
+	INIT_LIST_HEAD(&freedirsq);
 
-}
+	for (i = 0; i< NR_TASKS; i++) {
+		dir_pages[i][ENTRY_DIR_PAGES].entry = 0;
+		dir_pages[i][ENTRY_DIR_PAGES].bits.pbase_addr = (((unsigned int)&pagusr_table[i]) >> 12);
+		dir_pages[i][ENTRY_DIR_PAGES].bits.user = 1;
+		dir_pages[i][ENTRY_DIR_PAGES].bits.rw = 1;
+		dir_pages[i][ENTRY_DIR_PAGES].bits.present = 1;
 
+		free_dirs[i].dir = &dir_pages[i];
+		list_add_tail(&(free_dirs[i].anchor), &(freedirsq));
+	}
 }
 
 /* Initializes the page table (kernel pages only) */
@@ -266,3 +275,4 @@ void del_ss_pag(page_table_entry *PT, unsigned logical_page)
 unsigned int get_frame (page_table_entry *PT, unsigned int logical_page){
      return PT[logical_page].bits.pbase_addr; 
 }
+
