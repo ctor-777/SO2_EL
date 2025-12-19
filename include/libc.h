@@ -15,7 +15,7 @@
  * If it was declared in a system-privileged header, we could not have access to the struct, including the event information we'd store.
 */
 
-extern struct event_t {
+struct event_t {
     int pressed;
     char scandcode;
 };

@@ -1,3 +1,4 @@
+#include "include/libc.h"
 #include <libc.h>
 
 char buff[24];
@@ -6,124 +7,158 @@ int global;
 
 char stack[1024];
 
-void not_optimize() {
-	write(1, "\nin no opt", 10);
+struct position {
+	int x;
+	int y;
+};
+
+enum orientation {
+	RIGHT,
+	LEFT,
+	UP,
+	DOWN,
+};
+
+struct s_player {
+	struct position pos;
+	enum orientation ori;
+	int health;
+};
+
+struct s_player player;
+
+struct s_player enemies[3];
+
+char map[23][80];
+
+void change_pos(int x, int y) {
+	if( x > 80 || x < 0 || y < 0 || y > 25)
+		return;
+	char buff[5];
+	write(1, "\e", 1);
+	itoa(x, buff);
+	write(1, buff, strlen(buff));
+	write(1, ";", 1);
+	itoa(y, buff);
+	write(1, buff, strlen(buff));
+	write(1, "H", 1);
 }
 
-void thread_func(void* args) {
-	write(1, "\nin thread\n", 11);
+void create_map() {
+	write(1, "\x1bJ", 2);
 
-	write(1, "start global value", 18);
-	itoa(global, buff);
-	write(1, buff, 1);
-	write(1, "\n", 1);
-	
-	int i = 1;
-	int pid = fork();
-	if (pid != 0) {
-		write(1, "fork ", 5);
-		itoa(i, buff);
-		write(1, buff, strlen(buff));
-		write(1, " output: ", 9);
-		itoa(pid, buff);
-		write(1, buff, strlen(buff));
-		write(1, "\n", 1);
-	}
-	while(pid > 0) {
-		i++;
-		pid = fork();
-		if (pid != 0) {
-			write(1, "fork ", 5);
-			itoa(i, buff);
-			write(1, buff, strlen(buff));
-			write(1, " output: ", 9);
-			if (pid < 0) {
-				write(1, "error: ", 7);
-				perror();
-			} else {
-				itoa(pid, buff);
-				write(1, buff, strlen(buff));
-				write(1, "\n", 1);
-			}
+	write(1, "\e46m", 4);
+	change_pos(0, 5);
+	for(int y = 5; y < 25; y++) {
+		for(int x = 0; x < 80; x++) {
+			write(1, " ", 1);
+			map[y][x] = 'g';
 		}
 	}
-	if (pid == 0) {
-		global = 2;
-
-		write(1, "fork global value", 18);
-		itoa(global, buff);
-		write(1, buff, 1);
-		write(1, "\n", 1);
-
-		while(1) {;}
-	}
-	if (pid < 0) {
-		yield();
-		write(1, "end global value", 18);
-		itoa(global, buff);
-		write(1, buff, 1);
-		write(1, "\n", 1);
-		while(1) {;}	
-	}
-	while(1) {;}
-	exit();
 }
+
+void print_player(struct s_player* player) {
+	change_pos(player->pos.x, player->pos.y);
+
+	write(1, "\e32m\e40m", 8);
+	switch (player->ori) {
+		case RIGHT:
+			write(1, "}", 1);
+			break;
+		case LEFT:
+			write(1, "{", 1);
+			break;
+		case UP:
+			write(1, "^", 1);
+			break;
+		case DOWN:
+			write(1, "v", 1);
+			break;
+	}
+
+}
+
+void clear_player(struct s_player* player) {
+	change_pos(player->pos.x, player->pos.y);
+	write(1, "\x7f", 1);
+}
+
+void clear_map() {
+	for(int x = 0; x < 80; x++) {
+		for(int y = 0; y < 25; y++) {
+			map[y][x] = ' ';
+		}
+	}
+}
+
+void keyboard_thread(void* param) {
+	struct event_t ev;
+	int x;
+	while(1) {
+		x = pollEvent(&ev);
+		while(!x) {
+			x = pollEvent(&ev);
+		}
+		if (ev.pressed) {
+			// clear_player(&player);
+			switch (ev.scandcode) {
+				case 'w':
+					player.pos.y--;
+					if (player.pos.y < 2)
+						player.pos.y = 2;
+					player.ori = UP;
+					break;
+				case 'd':
+					player.pos.x++;
+					if (player.pos.x > 80)
+						player.pos.x = 80;
+
+					player.ori = RIGHT;
+					break;
+				case 's':
+					player.pos.y++;
+					if (player.pos.y > 25)
+						player.pos.y = 25;
+					player.ori = DOWN;
+					break;
+				case 'a':
+					player.pos.x--;
+					if (player.pos.x < 0)
+						player.pos.x = 0;
+					player.ori = LEFT;
+					break;
+				default:
+					break;
+			}
+			print_player(&player);
+		}
+	}
+		
+	yield();
+}
+
+void placement_thread(void* param) {
+}
+
+void score_thread(void* param) {
+}
+
+
 
 int __attribute__ ((__section__(".text.main")))
   main(void)
 {
     /* Next line, tries to move value 0 to CR3 register. This register is a privileged one, and so it will raise an exception */
      /* __asm__ __volatile__ ("mov %0, %%cr3"::"r" (0) ); */
-	write(1,"\n",1);
-	
-	struct event_t ev;
-	
-	//Test 1.1
-	write(1, "\n\n\n\n\n\n\n\n\n\n\nTEST 1.1\n", 20);
-	write(1,"Creating semaphore with value 0\n", 32);
-	semCreate(0);
-	
-	//Test 1.2
-	write(1, "\n\n\n\n\n\n\n\n\n\n\nTEST 1.2\n", 20);
-	write(1,"Creating semaphore with value 1\n", 32);
-	sem_t* sem = semCreate(1);
-	
-	//Test 1.3
-	write(1, "\n\n\n\n\n\n\n\n\n\n\nTEST 1.3\n", 20);
-	write(1,"In order to test it, we should uncomment 'sem->value++' and see how we get a page fault\n", 88);
-	//sem->value++;
-	
-	
-	sem_t* semAux;
-	//Test 2
-	write(1, "\n\n\n\n\n\n\n\n\n\n\nTEST 2\n", 18);
-	write(1,"Creating semaphore when there are no free left\n", 47);
-	int x = 2;
-	while(x<8 && (semAux=semCreate(1))) x++;
-	if(semCreate(1)<0) write(1,"Can't create, there are no free semaphores left\n", 48);
-	else write(1,"Test failed\n", 12);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	//Test 12
-	write(1, "\n\n\n\n\n\n\n\n\n\n\nTEST 12\n", 19);
-	write(1,"Thread using semDestroy to try to destroy the semaphore that he created\n", 72);
-	if(semDestroy(semAux)) write(1,"Semaphore destroyed\n", 20);
-	else write(1, "Test failed\n", 12);
 
-	global = 1;
-
-
-	clone(thread_func, 0, stack);
-	// thread_func(0);
-	exit();
+	player.pos.x = 40;
+	player.pos.y = 4;
+	player.ori = DOWN;
+	clear_map();
+	create_map();
+	print_player(&player);
+	keyboard_thread(0);
+	while(1) {;}
 
 }
 
