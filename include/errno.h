@@ -135,5 +135,7 @@
 #define EKEYREVOKED 128 /* Key has been revoked */
 #define EKEYREJECTED    129 /* Key was rejected by service */
 
+#define ESEMDESTROYED    130 /* Woke up by semDestroy */
+
 #endif
 

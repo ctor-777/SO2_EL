@@ -13,10 +13,10 @@ ENTRY (sys_call_table)
 	.long sys_ni_syscall	//8
 	.long sys_ni_syscall	//9
 	.long sys_gettime	//10
-	.long sys_ni_syscall	//11
-	.long sys_ni_syscall	//12
-	.long sys_yield		//13
-	.long sys_ni_syscall	//14
+	.long sys_semCreate	//11 					We associate the four syscalls with 11, 12, 13, 14 respectively.
+	.long sys_semWait	//12
+	.long sys_semSignal		//13
+	.long sys_semDestroy	//14
 	.long sys_ni_syscall	//15
 	.long sys_ni_syscall	//16
 	.long sys_ni_syscall	//17

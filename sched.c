@@ -16,6 +16,7 @@
 #include <utils.h>
 #include <p_stats.h>
 #include <libc.h>
+#include <semaphore.h>
 
 /**
  * Container for the Task array and 2 additional pages (the first and the last one)
@@ -39,6 +40,15 @@ extern struct list_head blocked;
 struct list_head freequeue;
 // Ready queue
 struct list_head readyqueue;
+
+
+/*
+ * We create the semaphore vector and the free semaphore list
+*/
+sem_t semaphoresVector[NR_SEM];
+
+struct list_head semFree;
+
 
 void init_stats(struct stats *s)
 {
@@ -244,6 +254,8 @@ void init_task1(void)
   setMSR(0x175, 0, (unsigned long)&(uc->stack[KERNEL_STACK_SIZE]));
 
   set_cr3(c->dir_pages_baseAddr);
+  
+  INIT_LIST_HEAD(&(c->semaphores));
 }
 
 void init_freequeue()
@@ -300,4 +312,16 @@ void force_task_switch()
   update_process_state_rr(current(), &readyqueue);
 
   sched_next_rr();
+}
+
+
+/* We create the function to initialize the free sem list inserting all semaphore structs from the vector*/
+void init_semFree()
+{
+  int i;
+
+  INIT_LIST_HEAD(&semFree);
+
+  for (i=0; i<NR_SEM; i++)
+    list_add_tail(&(semaphoresVector[i].list), &semFree);
 }

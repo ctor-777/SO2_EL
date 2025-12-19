@@ -166,3 +166,64 @@ ENTRY(set_errno)
 	popl %ebx
 	popl %ebp
 	ret
+
+/*
+ * We've created the wrapper to be able from the user code invoke this four syscalls.
+ *
+ * The semCreate syscall stores it's parameter, initial_value, on %ebx register and the result of the syscall, the direction of
+ * the semaphore, at the %eax register.
+ *
+ * The three other syscalls have the direction of the semaphore as the parameter, and store it's integer result on %eax register.
+*/
+
+ENTRY(semCreate)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $11, %eax
+	movl 0x8(%ebp), %ebx;	//initial_value
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+ENTRY(semWait)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $12, %eax
+	movl 0x8(%ebp), %ebx;	//&sem_t
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+ENTRY(semSignal)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $13, %eax
+	movl 0x8(%ebp), %ebx;	//&sem_t
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret
+
+ENTRY(semDestroy)
+	pushl %ebp
+	movl %esp, %ebp
+	pushl %ebx;
+	movl $14, %eax
+	movl 0x8(%ebp), %ebx;	//&sem_t
+	call syscall_sysenter
+	popl %ebx
+	test %eax, %eax
+	js nok
+	popl %ebp
+	ret

@@ -18,6 +18,8 @@
 
 #include <errno.h>
 
+#include <semaphore.h>
+
 
 /*
  * We add interrupt.h in order to have access to the global variables: 
@@ -136,6 +138,9 @@ int sys_clone(void (*function)(void* arg), void*parameter, char* stack) {
 	unthread->task.state=ST_READY;
 	list_add_tail(&(unthread->task.list), &readyqueue);
 	
+	/* Initialize list of semaphores*/
+	INIT_LIST_HEAD(&(unthread->task.semaphores));
+
 	return unthread->task.PID;
 }
 
@@ -233,6 +238,9 @@ int sys_fork(void)
   uchild->task.state=ST_READY;
   list_add_tail(&(uchild->task.list), &readyqueue);
   
+  /* Initialize list of semaphores*/
+  INIT_LIST_HEAD(&(uchild->task.semaphores));
+  
   return uchild->task.PID;
 }
 
@@ -271,6 +279,102 @@ extern int zeos_ticks;
 int sys_gettime()
 {
   return zeos_ticks;
+}
+
+sem_t* sys_semCreate(int initial_value)
+{
+  if(list_empty(&semFree)) return -ENOMEM;
+  struct list_head *lh = list_first(&semFree);
+  list_del(lh);
+  sem_t *s = list_entry(lh, sem_t, list);
+  INIT_LIST_HEAD(&(s->blocked_threads));
+  s->value = initial_value;
+  list_add_tail(&(s->list), &(current()->semaphores));
+  s->active = 1;
+  
+  //Test 1.2
+  if(s->value == 1) printk("Semaphore value 1 created\n");
+  //Test 1.1
+  if(s->value == 0) printk("Semaphore value 0 created\n");
+  
+  return s;
+}
+
+int sys_semWait(sem_t* s)
+{
+  if(!s->active) return -EINVAL;
+  s->value--;
+  
+  //Test 3
+  char c[8] = {0};
+  printk("SemWait used, actual value ");
+  int aux = s->value;
+  if(aux<0) 
+  {
+  	aux*=-1;
+  	printc('-');
+  }
+  itoa(aux, c);
+  printk(c);
+  printc('\n');
+  
+  if(s->value >= 0) return 1;
+  list_add_tail(&(current()->list), &(s->blocked_threads));
+  current()->state=ST_BLOCKED;
+  sched_next_rr();
+  if(!s->active) return -ESEMDESTROYED;
+  return 0;
+}
+int sys_semSignal(sem_t* s)
+{
+  if(!s->active) return -EINVAL;
+  
+  
+  s->value++;
+  
+  
+  //Test 7
+  char c[8];
+  printk("SemSignal used, actual value ");
+  itoa(s->value, c);
+  printk(c);
+  printc('\n');
+  
+  if(s->value <= 0) 
+  {
+  	struct list_head *lh = list_first(&(s->blocked_threads));
+  	struct task_struct *t = list_head_to_task_struct(lh);
+  	update_process_state_rr(t, &readyqueue);
+  }
+  //Test 9
+  else printk("There is no thread to unblock");
+  return 1;
+}
+
+int sys_semDestroy(sem_t* s)
+{
+  if(!s->active) return -EINVAL;
+  struct list_head *pos;
+  int found = 0;
+  list_for_each(pos, &(current()->semaphores))
+  	if(pos == &(s->list))
+  	{
+  		found = 1;
+  		break;
+  	}
+  if(!found) return 0;
+  struct list_head *lh;
+  struct task_struct *t;
+  while(!list_empty(&(s->blocked_threads)))
+  {
+    lh = list_first(&(s->blocked_threads));
+    t = list_head_to_task_struct(lh);
+    update_process_state_rr(t, &readyqueue);
+  }
+  s->value = -1;
+  list_del(&(s->list));
+  list_add_tail(&(s->list), &semFree);
+  s->active = 0;
 }
 
 extern struct list_head freedirsq;
