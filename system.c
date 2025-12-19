@@ -2,6 +2,7 @@
  * system.c - 
  */
 
+#include "include/io.h"
 #include <segment.h>
 #include <types.h>
 #include <interrupt.h>

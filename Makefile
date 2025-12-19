@@ -103,6 +103,10 @@ emul: zeos.bin
 
 gdb: zeos.bin
 	bochs -q -f .bochsrc_gdb &
+ifeq ($(USER), ctor)
+	sleep 6
+	wmctrl -r "Bochs x86 emulator, http://bochs.sourceforge.net/" -e 0,700,0,-1,-1
+endif
 	gdb -x .gdbcmd system
 
 emuldbg: zeos.bin

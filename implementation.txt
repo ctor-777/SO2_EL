@@ -1,0 +1,48 @@
+
+mil 3/5.
+	implementada una maquina d'estats dins de printc per evaluar les sequencies 
+	ANSI (inspirades en) de cambi de posició y de cambi de color (ESCx;yH y 
+	ESC3/4colorm respectivament) La maquina te 6 estats possibles:
+		NO_SEQ: l'estat per defecte, on imprimex els caracter que arriben
+		INIT_SEQ: l'estat el que pasa cuan rep un ESC.
+		CHANGE_BG_COLOR_SEL: l'estat al que pasa cuan rep un 4 a INIT_SEQ, guarda tots 
+			els sequents caracters (que siquin nombres) a tmp_color, en cas de rebre un ; 
+			vol dir que el 4 era part de la coordenada x de la sequencia de cambi de posició, 
+			suma el 4 (multiplicat pel que correspongui) a color, mou el valor a tmp_x y 
+			cambia d'estat a CHANGE_POS_Y, en cas de rebre un m cambia el color de fons i 
+			retorna a NO_SEQ.
+		CHANGE_FG_SEL: fa el mateix que l'anterior, pero cuan es rep un 3, i cambia el 
+			color del text
+		CHANGE_POS_X: el primer estat del cambi de posició, pasa cuan es rep un nombre 
+			diferent de 3 o 4 a INIT_SEQ, guarda tots els nombres seguents a tmp_x fins que 
+			rep un ;, on cambia a CHANGE_POS_Y
+		CHANGE_POS_Y: el segon estat del cambi de posicio, guarda tots el nombres 
+			seguents a tmp_y, fins que rep una H, on cambia la posició i cambia l'estat 
+			a NO_SEQ
+	tots els estats retornen a NO_SEQ si reben un valor no espera (sequencia invalida)
+
+
+mil 3.
+	implementada la funció change_pos que cambia la posició x e y que usa printc, e
+	incorporada la trucada a l'estat corresponent.
+
+mil 4.
+	cambiat printc per que cuan arribi el character backspace es mogi una posició 
+	enrere i esborri, i cuan arribi el character del, esborri la posició on es troba.
+
+mil 5.
+	implementdes les funcions auxiliars per cambiar el color de fons y de text, 
+	guarden els valor en les variables globals bg-color y fg_color. Modificat el 
+	apartat de printc per imprimir caracter de forma que utilitzi les variables 
+	globals per definir els color (posant-les als bits de mes pes del Word de 
+	pantalla), e incorporada la trucada en els estats corresponents.
+		
+
+inputs erronis:
+	en cas de rebre coordenades mes grans que la mida de la pantalla, es defnieix 
+	la posició com la maxima possible per la coordenada
+
+	si una coordenada es negativa, el character - fara la sequencia invalida i 
+	tota la resta de caracters despress es interpretaran com characters fora de la sequencia.
+
+	si un color es mes gran del maxim (15 per text y 7 per fons), es processara la sequencia sencera i es calculara una mascara del nombre.

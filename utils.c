@@ -1,5 +1,8 @@
 #include <utils.h>
+#include <sched.h>
 #include <types.h>
+#include <libc.h>
+#include <io.h>
 
 #include <sched.h>
 
