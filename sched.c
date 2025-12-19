@@ -35,6 +35,15 @@ struct list_head freequeue;
 // Ready queue
 struct list_head readyqueue;
 
+
+/*
+ * We create the semaphore vector and the free semaphore list
+*/
+sem_t semaphoresVector[NR_SEM];
+
+struct list_head semFree;
+
+
 void init_stats(struct stats *s)
 {
 	s->user_ticks = 0;
@@ -266,4 +275,16 @@ void force_task_switch()
   update_process_state_rr(current(), &readyqueue);
 
   sched_next_rr();
+}
+
+
+/* We create the function to initialize the free sem list inserting all semaphore structs from the vector*/
+void init_semFree()
+{
+  int i;
+
+  INIT_LIST_HEAD(&semFree);
+
+  for (i=0; i<NR_SEM; i++)
+    list_add_tail(&(semaphoresVector[i].list), &semFree);
 }

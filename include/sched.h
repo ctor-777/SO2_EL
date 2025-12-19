@@ -14,6 +14,8 @@
 
 #define NR_TASKS      10
 #define KERNEL_STACK_SIZE	1024
+#define NR_SEM 8
+
 
 enum state_t { ST_RUN, ST_READY, ST_BLOCKED };
 
@@ -55,6 +57,8 @@ extern struct task_struct *idle_task;
 
 extern struct list_head freequeue;
 extern struct list_head readyqueue;
+extern sem_t semaphoresVector[NR_SEM];
+extern struct list_head semFree;
 
 /* Inicialitza les dades del proces inicial */
 void init_task1(void);
@@ -90,4 +94,5 @@ void update_sched_data_rr();
 
 void init_stats(struct stats *s);
 
+void init_semFree();
 #endif  /* __SCHED_H__ */

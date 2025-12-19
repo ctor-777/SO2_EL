@@ -7,6 +7,7 @@
 #define __LIBC_H__
 
 #include <stats.h>
+#include <semaphore.h>
 
 extern int errno;
 
